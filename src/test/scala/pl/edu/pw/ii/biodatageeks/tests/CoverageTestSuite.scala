@@ -16,8 +16,8 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     val adamPath = getClass.getResource("/NA12878.slice.adam").getPath
     val metricsListener = new MetricsListener(new RecordedMetrics())
     val writer = new PrintWriter(new OutputStreamWriter(System.out))
-    val cramPath = getClass.getResource("/test.cram").getPath
-    val refPath = getClass.getResource("/phix-illumina.fa").getPath
+    val cramPath = getClass.getResource("/NA12878.slice.cram").getPath
+    val refPath = getClass.getResource("/NA12878.slice.fasta").getPath
     val tableNameBAM = "reads"
     val tableNameMultiBAM = "readsMulti"
     val tableNameADAM = "readsADAM"
@@ -172,7 +172,7 @@ class CoverageTestSuite extends FunSuite with DataFrameSuiteBase with BeforeAndA
     val session: SparkSession = SequilaSession(spark)
     SequilaRegister.register(session)
 
-    val bdg = session.sql(s"SELECT * FROM bdg_coverage('${tableNameCRAM}','test', 'blocks') ")
+    val bdg = session.sql(s"SELECT * FROM bdg_coverage('${tableNameCRAM}','NA12878', 'blocks') ")
 
     assert(bdg.count() == 49)
     assert(bdg.where("start == 107").first().getShort(3) == 459)

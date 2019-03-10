@@ -58,8 +58,8 @@ val queries = Array(
       |     )
       |     GROUP BY targets.contigName,targets.start,targets.end
     """.stripMargin),
-  BDGQuery("bdg_cov_window_fix_length_100_count_NA12878_BAM",s"SELECT COUNT(*) FROM bdg_coverage ('${bamTable}','NA12878', 'bases','500')"),
-  BDGQuery("bdg_cov_window_fix_length_100_count_NA12878_CRAM",s"SELECT COUNT(*) FROM bdg_coverage ('${cramTable}','NA12878', 'bases','500')")
+  BDGQuery("bdg_cov_window_fix_length_500_count_NA12878_BAM",s"SELECT COUNT(*) FROM bdg_coverage ('${bamTable}','NA12878', 'bases','500')"),
+  BDGQuery("bdg_cov_window_fix_length_500_count_NA12878_CRAM",s"SELECT COUNT(*) FROM bdg_coverage ('${cramTable}','NA12878', 'bases','500')")
 )
 
 BDGPerfRunner.run(ss,queries)

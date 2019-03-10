@@ -26,15 +26,15 @@ libraryDependencies +=  "org.apache.spark" % "spark-core_2.11" % sparkVersion
 
 libraryDependencies +=  "org.apache.spark" % "spark-sql_2.11" % sparkVersion
 libraryDependencies +=  "org.apache.spark" %% "spark-hive" % sparkVersion
-libraryDependencies +=  "org.apache.spark" %% "spark-hive-thriftserver" % "2.4.0"
+libraryDependencies +=  "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion
 
-libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.11" % "2.4.0_0.11.0" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
+libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.11" % "2.3.2_0.11.0" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
 
 //libraryDependencies += "org.apache.spark" %% "spark-hive"       % "2.0.0" % "test"
 
-libraryDependencies += "org.bdgenomics.adam" %% "adam-core-spark2" % "0.25.0"
-libraryDependencies += "org.bdgenomics.adam" %% "adam-apis-spark2" % "0.25.0"
-libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.25.0"
+libraryDependencies += "org.bdgenomics.adam" %% "adam-core-spark2" % "0.24.0"
+libraryDependencies += "org.bdgenomics.adam" %% "adam-apis-spark2" % "0.24.0"
+libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.24.0"
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.8"
 libraryDependencies += "org.rogach" %% "scallop" % "3.1.2"
 
@@ -61,7 +61,7 @@ libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.3.24.v20180605
 libraryDependencies += "org.apache.derby" % "derbyclient" % "10.14.2.0"
 
 
-libraryDependencies += "org.biodatageeks" % "bdg-performance_2.11" % "0.2-SNAPSHOT" excludeAll (ExclusionRule("org.apache.hadoop"))
+libraryDependencies += "org.biodatageeks" % "bdg-performance_2.11" % "0.2-spark-2.3.3-SNAPSHOT" excludeAll (ExclusionRule("org.apache.hadoop"))
 
 libraryDependencies += "org.disq-bio" % "disq" % "0.3.0"
 

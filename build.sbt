@@ -4,7 +4,7 @@ import scala.util.Properties
 
 name := """bdg-sequila"""
 
-version := "0.5.4-spark-2.3.2.3.1.0.0-78"
+version := "0.5.5-spark-2.3.2.3.1.0.0-78"
 
 organization := "org.biodatageeks"
 
@@ -103,7 +103,7 @@ resolvers ++= Seq(
 //fix for hdtsdjk patch in hadoop-bam and disq
 assemblyShadeRules in assembly := Seq(
   ShadeRule.rename("htsjdk.samtools.SAMRecordHelper" -> "htsjdk.samtools.SAMRecordHelperDisq").inLibrary("org.disq-bio" % "disq" % "0.3.0"),
-  ShadeRule.rename("htsjdk.samtools.SAMRecordHelper" -> "htsjdk.samtools.SAMRecordHelperHadoopBAM").inLibrary("org.seqdoop" % "hadoop-bam" % "7.10.0")
+  ShadeRule.rename("htsjdk.samtools.SAMRecordHelper" -> "htsjdk.samtools.SAMRecordHelperHadoopBAM").inLibrary("org.seqdoop" % "hadoop-bam" % "7.10.0").inProject
 
 )
 
@@ -146,11 +146,13 @@ artifact in (Compile, assembly) := {
   val art = (artifact in (Compile, assembly)).value
   art.withClassifier(Some("assembly"))
 }
+
 addArtifact(artifact in (Compile, assembly), assembly)
 
 publishConfiguration := publishConfiguration.value.withOverwrite(true)
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+
 publishTo := {
   val nexus = "http://zsibio.ii.pw.edu.pl/nexus/repository/"
   if (isSnapshot.value)

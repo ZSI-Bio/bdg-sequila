@@ -110,7 +110,7 @@ object PileupProjection {
       singleArraySize = wordSize + arrayNullRegionLen + roundUp(map(k).length *shortSize, wordSize)
       shortArraysSize += singleArraySize
     }
-    val valuesArraySize = wordSize + arrayNullRegionLen + roundUp(shortArraysSize, wordSize)
+    val valuesArraySize = wordSize + arrayNullRegionLen + roundUp(shortArraysSize, wordSize) + map.size *wordSize
     val mapSize = wordSize + keysArraySize + valuesArraySize
     (mapSize, keysArraySize, valuesArraySize)
   }
@@ -133,10 +133,15 @@ object PileupProjection {
 
     val nullArrayRegionLen = calculateArrayNullRegionLen(array.length)
     var elementsOffset = offset + wordSize + nullArrayRegionLen
+
+    val fixedRegionLen = array.length*wordSize
+    var offsetWRTBase = wordSize + nullArrayRegionLen + fixedRegionLen
     for (i <- array.indices) {
-      writeArray(data, array(i), elementsOffset)
+      data(elementsOffset + i*wordSize) = array(i).length.toByte
+      data(elementsOffset + i*wordSize + 4) = offsetWRTBase.toByte
+      writeArray(data, array(i), offsetWRTBase + offset)
       val singleArraySize = wordSize + nullArrayRegionLen + roundUp(array(i).length * shortSize, wordSize)
-      elementsOffset += singleArraySize
+      offsetWRTBase += singleArraySize
     }
   }
 

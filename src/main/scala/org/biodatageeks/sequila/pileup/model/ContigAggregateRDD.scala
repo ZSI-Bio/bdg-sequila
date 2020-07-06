@@ -99,8 +99,8 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     val ref = bases.substring(prev.pos, i)
     val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
     val qualMap = new SingleLocusQuals()
-    qualMap += ('A'.toByte -> Array(31.toShort) )
-    qualMap += ('T'.toByte -> Array(31.toShort) )
+    qualMap += ('A'.toByte -> Array(31.toShort, 30.toShort) )
+    qualMap += ('T'.toByte -> Array(41.toShort, 40.toShort) )
     result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualMap.toMap)
     prev.alt.clear()
   }

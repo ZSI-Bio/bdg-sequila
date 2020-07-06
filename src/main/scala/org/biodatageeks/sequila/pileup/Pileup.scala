@@ -18,8 +18,11 @@ import scala.reflect.ClassTag
 class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]) extends BDGAlignFileReaderWriter[T] {
   val logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
 
-  def handlePileup(tableName: String, sampleId: String, refPath:String, output: Seq[Attribute]): RDD[InternalRow] = {
-    logger.info("Calculating pileup on table: {}", tableName)
+  def handlePileup(tableName: String, sampleId: String, refPath:String, qual: Boolean, output: Seq[Attribute]): RDD[InternalRow] = {
+    logger.info(s"### Calculating pileup on table: $tableName with quals set = $qual")
+
+    if (qual)
+      return spark.sparkContext.emptyRDD[InternalRow]
 
     lazy val allAlignments = readTableFile(name=tableName, sampleId)
 

@@ -30,8 +30,7 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
 
     val alignments = filterAlignments(allAlignments )
 
-
-    PileupMethods.calculatePileup(alignments, spark ,refPath)
+    PileupMethods.calculatePileup(alignments, spark, refPath, qual)
 
   }
 

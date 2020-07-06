@@ -20,7 +20,8 @@ case class PileupRecord (
                           cov: Short,
                           countRef:Short,
                           countNonRef:Short,
-                          alts: Map[Byte, Short])
+                          alts: Map[Byte, Short],
+                          quals: Map[Byte, Array[Short]])
   extends GenericPileupRecord
 
 

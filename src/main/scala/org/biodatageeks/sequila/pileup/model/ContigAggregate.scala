@@ -15,6 +15,7 @@ case class ContigAggregate(
                             contigLen: Int = 0,
                             events: Array[Short],
                             alts: MultiLociAlts,
+                            quals: MultiLociQuals,
                             startPosition: Int = 0,
                             maxPosition: Int = 0,
                             shrinkedEventsArraySize: Int = 0,
@@ -71,7 +72,8 @@ case class ContigAggregate(
 
     val shrinkedEventsSize = ShrinkArrayTimer.time { calculateShrinkedEventsSize(shrink, adjustedEvents) }
     val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
-    ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen)
+    //shrink quals TODO
+    ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, quals, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen)
   }
 
   private def calculateAdjustedEvents(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]): Array[Short] = {

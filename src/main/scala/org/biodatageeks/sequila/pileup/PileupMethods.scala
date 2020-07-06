@@ -34,7 +34,7 @@ object PileupMethods {
       .getConf(InternalParams.EnableInstrumentation).toBoolean
     val alignmentsInstr = if(enableInstrumentation) alignments.instrument() else alignments
     val aggregates = ContigAggrTimer.time {
-      alignmentsInstr.assembleContigAggregates()
+      alignmentsInstr.assembleContigAggregates(qual)
         .persist(StorageLevel.MEMORY_AND_DISK) //FIXME: Add automatic unpersist
     }
     val accumulator = AccumulatorTimer.time {aggregates.accumulateTails(spark)}

@@ -9,18 +9,18 @@ class BaseQualityTestSuite extends PileupTestBase {
 
   val pileupQuery =
     s"""
-       |SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END}, ${Columns.REF}, ${Columns.COVERAGE}, ${Columns.ALTS}
-       |FROM  pileup('$tableName', '${sampleId}', '$referencePath', true)
+       |SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END}, ${Columns.REF}, ${Columns.COVERAGE}, ${Columns.ALTS}, ${Columns.QUALS}
+       |FROM  pileup('$tableName', '${sampleId}', '$referencePath')
        |ORDER BY ${Columns.CONTIG}
                  """.stripMargin
   
-  test("Normal split") {
+  test("Simple Quals lookup") {
     val ss = SequilaSession(spark)
     SequilaRegister.register(ss)
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
-    assert(result.isEmpty)
+    result.show(20, truncate = false)
   }
 
 }

@@ -98,7 +98,10 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     val posStart, posEnd = i+agg.startPosition-1
     val ref = bases.substring(prev.pos, i)
     val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
-    result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap)
+    val qualMap = new SingleLocusQuals()
+    qualMap += ('A'.toByte -> Array(31.toShort) )
+    qualMap += ('T'.toByte -> Array(31.toShort) )
+    result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualMap.toMap)
     prev.alt.clear()
   }
   private def addBlockRecord(result:Array[InternalRow], ind:Int,
@@ -106,6 +109,6 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     val ref = bases.substring(prev.pos, i)
     val posStart=i+agg.startPosition-prev.len
     val posEnd=i+agg.startPosition-1
-    result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, prev.cov.toShort, 0.toShort,null )
+    result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, prev.cov.toShort, 0.toShort,null,null )
   }
 }

@@ -22,7 +22,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     *
     * @return distributed collection of PileupRecords
     */
-  def assembleContigAggregates(): RDD[ContigAggregate] = {
+  def assembleContigAggregates(qual:Boolean): RDD[ContigAggregate] = {
     val contigLenMap = InitContigLengthsTimer.time  {
       initContigLengths(this.rdd.first())
     }
@@ -82,6 +82,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
         contigEventAgg.contigLen,
         util.Arrays.copyOfRange(contigEventAgg.events, 0, maxIndex + 1), //FIXME: https://stackoverflow.com/questions/37969193/why-is-array-slice-so-shockingly-slow
         contigEventAgg.alts,
+        contigEventAgg.quals,
         contigEventAgg.startPosition,
         contigEventAgg.startPosition + maxIndex,
         0,
@@ -104,6 +105,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       contigLen = contigLen,
       events = new Array[Short](arrayLen),
       alts = new MultiLociAlts(),
+      quals = new MultiLociQuals(),
       startPosition = read.getStart,
       maxPosition = contigLen - 1)
 

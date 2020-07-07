@@ -223,7 +223,7 @@ object PileupTemplate {
       StructField(Columns.ALTS,MapType(ByteType,ShortType),nullable = true)
     ))
 
-    val output = if (qual)
+    val output = if (!qual)
                   basicOutput
                 else
                   basicOutput

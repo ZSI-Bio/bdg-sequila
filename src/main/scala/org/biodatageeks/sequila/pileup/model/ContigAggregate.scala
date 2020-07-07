@@ -25,6 +25,9 @@ case class ContigAggregate(
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: Range = Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
+  def getAltPositionsForRange(start: Int, end: Int): Seq[Long] = {
+    alts.filter(_._1 >= start).filter(_._1 <= end).keySet.toSeq
+  }
 
 
   def calculateMaxLength(allPositions: Boolean): Int = {
@@ -48,6 +51,15 @@ case class ContigAggregate(
     val altMap = alts.getOrElse(position, new SingleLocusAlts())
     altMap(altByte) = (altMap.getOrElse(altByte, 0.toShort) + 1).toShort
     alts.update(position, altMap)
+  }
+
+  def updateQuals(pos: Int, alt: Char, quality: Short): Unit = {
+    val position = pos // naturally indexed
+    val altByte = alt.toByte
+
+    val qualMap = quals.getOrElse(position, new SingleLocusQuals())
+    qualMap.getOrElse(altByte, new ArrayBuffer[Short]()).append(quality)
+    quals.update(position, qualMap)
   }
 
   def getTail:Tail ={

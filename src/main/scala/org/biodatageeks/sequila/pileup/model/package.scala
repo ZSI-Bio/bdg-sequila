@@ -1,6 +1,7 @@
 package org.biodatageeks.sequila.pileup
 
 import scala.collection.mutable
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 package object model {
   type SingleLocusAlts = mutable.HashMap[Byte,Short]
@@ -9,8 +10,8 @@ package object model {
   type MultiLociAlts= mutable.LongMap[SingleLocusAlts]
   val MultiLociAlts = mutable.LongMap[SingleLocusAlts] _
 
-  type SingleLocusQuals = mutable.HashMap[Byte, Array[Short]]
-  val SingleLocusQuals = mutable.HashMap[Byte, Array[Short]] _
+  type SingleLocusQuals = mutable.HashMap[Byte, ArrayBuffer[Short]]
+  val SingleLocusQuals = mutable.HashMap[Byte, ArrayBuffer[Short]] _
 
   type MultiLociQuals = mutable.LongMap[SingleLocusQuals]
   val MultiLociQuals = mutable.LongMap[SingleLocusQuals] _

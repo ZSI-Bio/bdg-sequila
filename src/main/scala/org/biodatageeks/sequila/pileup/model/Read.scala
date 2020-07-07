@@ -2,7 +2,8 @@ package org.biodatageeks.sequila.pileup.model
 
 import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.biodatageeks.sequila.pileup.MDTagParser
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer, AnalyzeReadsCalculateAltsParseMDTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
+import org.biodatageeks.sequila.utils.ReadConsts
 
 import scala.collection.mutable
 
@@ -14,12 +15,30 @@ object ReadOperations {
 
 case class ExtendedReads(r:SAMRecord) {
 
+  def fillBaseQualitiesForExisitingAlts(aggregate: ContigAggregate) = {
+    val altsPositions = aggregate.getAltPositionsForRange(r.getStart, r.getEnd)
+    for (pos <- altsPositions)
+      aggregate.updateQuals(pos.toInt,ReadConsts.REF_SYMBOL, 10)
+  }
+
   def analyzeRead(contig: String,
                   aggregate: ContigAggregate,
-                  contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
+                  contigMaxReadLen: mutable.HashMap[String, Int],
+                  qual:Boolean, qualityCache: QualityCache): Unit = {
 
+    if (qual) fillBaseQualitiesForExisitingAlts(aggregate)
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
-    AnalyzeReadsCalculateAltsTimer.time{ calculateAlts(aggregate) }
+    AnalyzeReadsCalculateAltsTimer.time{ calculateAlts(aggregate, qual, qualityCache) }
+
+
+  }
+
+  def addToCache(qualityCache: QualityCache, counter: Int, maxLen: Int) = {
+    val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigarString)
+    if (maxLen > qualityCache.length)
+      qualityCache.resize(maxLen)
+    qualityCache((counter-1)%maxLen) = readQualSummary
+
   }
 
   def calculateEvents(contig: String, aggregate: ContigAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
@@ -79,7 +98,15 @@ case class ExtendedReads(r:SAMRecord) {
     mdPosition + numInsertions
   }
 
-  private def calculateAlts(eventAggregate: ContigAggregate): Unit = {
+  def fillPastQualitiesFromCache(eventAggregate: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
+    val reads = qualityCache.getReadsOverlappingPosition(altPosition)
+    for (read <- reads) {
+      val qual = read.getBaseQualityForPosition(altPosition)
+      eventAggregate.updateQuals(altPosition, ReadConsts.REF_SYMBOL, qual )
+    }
+  }
+
+  private def calculateAlts(eventAggregate: ContigAggregate, qual:Boolean, qualityCache: QualityCache): Unit = {
     val read = this.r
     var position = read.getStart
     val md = read.getAttribute("MD").toString
@@ -100,7 +127,11 @@ case class ExtendedReads(r:SAMRecord) {
 
         val indexInSeq = calculatePositionInReadSeq(position - read.getStart -delCounter)
         val altBase = getAltBaseFromSequence(indexInSeq)
-        eventAggregate.updateAlts(position - clipLen - 1, altBase)
+        val altPosition = position - clipLen - 1
+        val newAlt = !eventAggregate.hasAltOnPosition(altPosition)
+        eventAggregate.updateAlts(altPosition, altBase)
+        if (newAlt && qual)
+          fillPastQualitiesFromCache(eventAggregate, altPosition, qualityCache)
       }
       else if(mdtag.base == 'S')
         position += mdtag.length

@@ -7,7 +7,7 @@ class QualityCacheTestSuite extends FunSuite{
 
   test("Qual cache test"){
 
-    val qualCache = new QualityCache
+    val qualCache = new QualityCache(0)
     assert(qualCache.length==0)
 
     qualCache.resize(2)

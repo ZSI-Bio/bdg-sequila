@@ -21,9 +21,6 @@ class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]
   def handlePileup(tableName: String, sampleId: String, refPath:String, qual: Boolean, output: Seq[Attribute]): RDD[InternalRow] = {
     logger.info(s"### Calculating pileup on table: $tableName with quals set = $qual")
 
-    if (qual)
-      return spark.sparkContext.emptyRDD[InternalRow]
-
     lazy val allAlignments = readTableFile(name=tableName, sampleId)
 
     if(logger.isDebugEnabled()) logger.debug("Processing {} reads in total", allAlignments.count() )

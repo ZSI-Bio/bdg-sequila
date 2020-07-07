@@ -10,7 +10,7 @@ class BaseQualityTestSuite extends PileupTestBase {
   val pileupQuery =
     s"""
        |SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END}, ${Columns.REF}, ${Columns.COVERAGE}, ${Columns.ALTS}, ${Columns.QUALS}
-       |FROM  pileup('$tableName', '${sampleId}', '$referencePath')
+       |FROM  pileup('$tableName', '${sampleId}', '$referencePath', true)
        |ORDER BY ${Columns.CONTIG}
                  """.stripMargin
   

@@ -67,3 +67,7 @@ object Columns {
   final val ALT = "alt"
   final val ALTS= "alts"
 }
+
+object ReadConsts {
+  final val REF_SYMBOL = 'R'
+}

@@ -3,7 +3,10 @@ package org.biodatageeks.sequila.tests.pileup
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.spark.sql.{Dataset, Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{IntegerType, ShortType, StringType, StructField, StructType}
+import org.eclipse.jetty.server.Authentication.Wrapped
 import org.scalatest.{BeforeAndAfter, FunSuite}
+
+import scala.collection.mutable
 
 class PileupTestBase extends FunSuite
   with DataFrameSuiteBase
@@ -60,8 +63,22 @@ class PileupTestBase extends FunSuite
 
     val byteToString = ((byte: Byte) => byte.toString)
 
+    val qualMapToCoverage = (map: Map[Byte, mutable.WrappedArray[Short]], cov: Short) => {
+      if (map == null)
+        cov
+      else
+        (map.foldLeft(0)(_+_._2.length)).toShort
+    }
+
+    val covEquality = (originalCov:Short, qualityCov:Short) => originalCov==qualityCov
+
+
+
     spark.udf.register("mapToString", mapToString)
     spark.udf.register("byteToString", byteToString)
+    spark.udf.register("qualMapToCoverage", qualMapToCoverage)
+    spark.udf.register("covEquality", covEquality)
+
   }
 
 }

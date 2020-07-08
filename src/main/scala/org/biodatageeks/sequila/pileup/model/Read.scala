@@ -7,6 +7,7 @@ import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculat
 import org.biodatageeks.sequila.utils.ReadConsts
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object ReadOperations {
   object implicits {
@@ -16,9 +17,10 @@ object ReadOperations {
 
 case class ExtendedReads(r:SAMRecord) {
 
-  def fillBaseQualitiesForExisitingAlts(aggregate: ContigAggregate) = {
+  def fillBaseQualitiesForExisitingAlts(aggregate: ContigAggregate, blackList:Seq[Long]) = {
     val altsPositions = aggregate.getAltPositionsForRange(r.getStart, r.getEnd)
-    for (pos <- altsPositions)
+    val updatePositions = altsPositions diff blackList
+    for (pos <- updatePositions)
       aggregate.updateQuals(pos.toInt,ReadConsts.REF_SYMBOL, ReadConsts.FREQ_QUAL) //fixme get real values from BQString
   }
 
@@ -27,9 +29,9 @@ case class ExtendedReads(r:SAMRecord) {
                   contigMaxReadLen: mutable.HashMap[String, Int],
                   qualityCache: QualityCache): Unit = {
 
-    if (Conf.includeBaseQualities) fillBaseQualitiesForExisitingAlts(aggregate)
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
-    AnalyzeReadsCalculateAltsTimer.time{ calculateAlts(aggregate, qualityCache) }
+    val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(aggregate, qualityCache) }
+    if (Conf.includeBaseQualities) fillBaseQualitiesForExisitingAlts(aggregate, foundAlts)
 
 
   }
@@ -107,12 +109,13 @@ case class ExtendedReads(r:SAMRecord) {
     }
   }
 
-  private def calculateAlts(eventAggregate: ContigAggregate, qualityCache: QualityCache): Unit = {
+  private def calculateAlts(aggregate: ContigAggregate, qualityCache: QualityCache): Seq[Long] = {
     val read = this.r
     var position = read.getStart
     val md = read.getAttribute("MD").toString
     val ops = AnalyzeReadsCalculateAltsParseMDTimer.time { MDTagParser.parseMDTag(md) }
     var delCounter = 0
+    var altsPositions = new ArrayBuffer[Long]()
     val clipLen =
       if (read.getCigar.getCigarElement(0).getOperator.isClipping)
         read.getCigar.getCigarElement(0).getLength else 0
@@ -130,16 +133,18 @@ case class ExtendedReads(r:SAMRecord) {
         val altBase = getAltBaseFromSequence(indexInSeq)
         val altBaseQual = getAltBaseQualFromSequence(indexInSeq)
         val altPosition = position - clipLen - 1
-        val newAlt = !eventAggregate.hasAltOnPosition(altPosition)
-        eventAggregate.updateAlts(altPosition, altBase)
-        eventAggregate.updateQuals(altPosition, altBase, altBaseQual)
-        if (newAlt && Conf.includeBaseQualities)
-          fillPastQualitiesFromCache(eventAggregate, altPosition, qualityCache)
+        val newAlt = !aggregate.hasAltOnPosition(altPosition)
+        aggregate.updateAlts(altPosition, altBase)
+        aggregate.updateQuals(altPosition, altBase, altBaseQual)
 
+        if (newAlt && Conf.includeBaseQualities)
+          fillPastQualitiesFromCache(aggregate, altPosition, qualityCache)
+        altsPositions.append(altPosition)
       }
       else if(mdtag.base == 'S')
         position += mdtag.length
     }
+    altsPositions.toSeq
   }
 
   private def getAltBaseFromSequence(position: Int):Char = this.r.getReadString.charAt(position-1)

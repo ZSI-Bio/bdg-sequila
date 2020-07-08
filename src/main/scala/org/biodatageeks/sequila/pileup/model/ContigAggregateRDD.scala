@@ -4,8 +4,10 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
+import org.biodatageeks.sequila.pileup.conf.Conf
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer,  PileupUpdateCreationTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
+
 import scala.collection.mutable.ArrayBuffer
 
 object AggregateRDDOperations {
@@ -38,7 +40,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     this.rdd map { agg =>  agg.getAdjustedAggregate(b)}
   }
 
-  def toPileup(qual:Boolean): RDD[InternalRow] = {
+  def toPileup: RDD[InternalRow] = {
 
     this.rdd.mapPartitions { part =>
       val contigMap = Reference.getNormalizedContigMap
@@ -56,7 +58,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
         while (i < agg.shrinkedEventsArraySize) {
           cov += agg.events(i)
           if (prev.hasAlt) {
-            addBaseRecord(result, ind, agg, bases, i, prev,qual)
+            addBaseRecord(result, ind, agg, bases, i, prev)
             ind += 1;
             prev.reset(i)
             if (agg.hasAltOnPosition(i+startPosition))
@@ -94,11 +96,11 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
   private def isEndOfZeroCoverageRegion(cov: Int, prevCov: Int, i: Int) = cov != 0 && prevCov == 0 && i > 0
 
   private def addBaseRecord(result:Array[InternalRow], ind:Int,
-                    agg:ContigAggregate, bases:String, i:Int, prev:BlockProperties, qual:Boolean) {
+                    agg:ContigAggregate, bases:String, i:Int, prev:BlockProperties) {
     val posStart, posEnd = i+agg.startPosition-1
     val ref = bases.substring(prev.pos, i)
     val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
-    val qualsMap = if (qual) agg.quals(posStart).map{case (k,v) => (k, v.toArray[Short])}.toMap else null
+    val qualsMap = if (Conf.includeBaseQualities) agg.quals(posStart).map{case (k,v) => (k, v.toArray[Short])}.toMap else null
     result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualsMap)
     prev.alt.clear()
   }

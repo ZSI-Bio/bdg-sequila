@@ -2,6 +2,7 @@ package org.biodatageeks.sequila.pileup.model
 
 import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.biodatageeks.sequila.pileup.MDTagParser
+import org.biodatageeks.sequila.pileup.conf.Conf
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
 import org.biodatageeks.sequila.utils.ReadConsts
 
@@ -24,11 +25,11 @@ case class ExtendedReads(r:SAMRecord) {
   def analyzeRead(contig: String,
                   aggregate: ContigAggregate,
                   contigMaxReadLen: mutable.HashMap[String, Int],
-                  qual:Boolean, qualityCache: QualityCache): Unit = {
+                  qualityCache: QualityCache): Unit = {
 
-    if (qual) fillBaseQualitiesForExisitingAlts(aggregate)
+    if (Conf.includeBaseQualities) fillBaseQualitiesForExisitingAlts(aggregate)
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
-    AnalyzeReadsCalculateAltsTimer.time{ calculateAlts(aggregate, qual, qualityCache) }
+    AnalyzeReadsCalculateAltsTimer.time{ calculateAlts(aggregate, qualityCache) }
 
 
   }
@@ -106,7 +107,7 @@ case class ExtendedReads(r:SAMRecord) {
     }
   }
 
-  private def calculateAlts(eventAggregate: ContigAggregate, qual:Boolean, qualityCache: QualityCache): Unit = {
+  private def calculateAlts(eventAggregate: ContigAggregate, qualityCache: QualityCache): Unit = {
     val read = this.r
     var position = read.getStart
     val md = read.getAttribute("MD").toString
@@ -132,7 +133,7 @@ case class ExtendedReads(r:SAMRecord) {
         val newAlt = !eventAggregate.hasAltOnPosition(altPosition)
         eventAggregate.updateAlts(altPosition, altBase)
         eventAggregate.updateQuals(altPosition, altBase, altBaseQual)
-        if (newAlt && qual)
+        if (newAlt && Conf.includeBaseQualities)
           fillPastQualitiesFromCache(eventAggregate, altPosition, qualityCache)
 
       }

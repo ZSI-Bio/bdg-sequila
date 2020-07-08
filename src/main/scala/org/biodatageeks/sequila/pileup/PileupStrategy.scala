@@ -9,6 +9,7 @@ import org.apache.spark.sql.{PileupTemplate, SparkSession, Strategy}
 import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
 import org.biodatageeks.sequila.datasources.InputDataType
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
+import org.biodatageeks.sequila.pileup.conf.Conf
 import org.biodatageeks.sequila.utils.TableFuncs
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, CRAMBDGInputFormat}
 
@@ -44,7 +45,8 @@ case class PileupPlan [T<:BDGAlignInputFormat](plan:LogicalPlan, spark:SparkSess
   override def children: Seq[SparkPlan] = Nil
 
   override protected def doExecute(): RDD[InternalRow] = {
-   new Pileup(spark).handlePileup(tableName, sampleId, refPath, qual, output)
+    Conf.includeBaseQualities = qual
+   new Pileup(spark).handlePileup(tableName, sampleId, refPath, output)
   }
 
 }

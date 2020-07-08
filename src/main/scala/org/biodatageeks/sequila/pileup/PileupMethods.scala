@@ -26,7 +26,7 @@ object PileupMethods {
     * @param spark spark session
     * @return distributed collection of PileupRecords
     */
-  def calculatePileup(alignments: RDD[SAMRecord], spark: SparkSession, refPath: String, qual:Boolean): RDD[InternalRow] = {
+  def calculatePileup(alignments: RDD[SAMRecord], spark: SparkSession, refPath: String): RDD[InternalRow] = {
 
     Reference.init(refPath)
     val enableInstrumentation = spark
@@ -34,7 +34,7 @@ object PileupMethods {
       .getConf(InternalParams.EnableInstrumentation).toBoolean
     val alignmentsInstr = if(enableInstrumentation) alignments.instrument() else alignments
     val aggregates = ContigAggrTimer.time {
-      alignmentsInstr.assembleContigAggregates(qual)
+      alignmentsInstr.assembleContigAggregates
         .persist(StorageLevel.MEMORY_AND_DISK) //FIXME: Add automatic unpersist
     }
     val accumulator = AccumulatorTimer.time {aggregates.accumulateTails(spark)}
@@ -43,7 +43,7 @@ object PileupMethods {
       spark.sparkContext.broadcast(accumulator.value().prepareOverlaps())
     }
     val adjustedEvents = AdjustedEventsTimer.time {aggregates.adjustWithOverlaps(broadcast) }
-    val pileup = EventsToPileupTimer.time {adjustedEvents.toPileup(qual)}
+    val pileup = EventsToPileupTimer.time {adjustedEvents.toPileup}
     pileup
   }
 }

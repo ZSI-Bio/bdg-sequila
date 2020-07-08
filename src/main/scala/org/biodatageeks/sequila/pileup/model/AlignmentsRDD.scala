@@ -4,11 +4,12 @@ import java.util
 
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer,AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer, AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
 import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
 
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
+import org.biodatageeks.sequila.pileup.conf.Conf
 
 object AlignmentsRDDOperations {
   object implicits {
@@ -22,7 +23,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     *
     * @return distributed collection of PileupRecords
     */
-  def assembleContigAggregates(qual:Boolean): RDD[ContigAggregate] = {
+  def assembleContigAggregates: RDD[ContigAggregate] = {
     val contigLenMap = InitContigLengthsTimer.time  {
       initContigLengths(this.rdd.first())
     }
@@ -51,13 +52,13 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
 
           if (!aggMap.contains(contig))
             HandleFirstContingTimer.time {
-              handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap, qualityCacheByContig, qual)
+              handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap, qualityCacheByContig)
               contigAggregate = AggMapLookupTimer.time {aggMap(contig) }
               contigQualityCache = qualityCacheByContig(contig)
             }
 
-          AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen, qual, contigQualityCache)}
-          if (qual)
+          AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen, contigQualityCache)}
+          if (Conf.includeBaseQualities)
             read.addToCache(contigQualityCache, readCounter, contigMaxReadLen(contig))
         }
         PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
@@ -104,7 +105,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
   private def handleFirstReadForContigInPartition(read: SAMRecord, contig: String, contigLenMap: Map[String, Int],
                                                   contigMaxReadLen: mutable.HashMap[String, Int],
                                                   aggMap: mutable.HashMap[String, ContigAggregate],
-                                                  qualityCacheByContig: QualityCacheByContig, qual:Boolean) = {
+                                                  qualityCacheByContig: QualityCacheByContig) = {
     val contigLen = contigLenMap(contig)
     val arrayLen = contigLen - read.getStart + 10
 
@@ -142,5 +143,6 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     }
     contigLenMap.toMap
   }
+
 
 }

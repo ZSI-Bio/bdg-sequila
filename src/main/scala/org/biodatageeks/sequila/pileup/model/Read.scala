@@ -18,7 +18,7 @@ case class ExtendedReads(r:SAMRecord) {
   def fillBaseQualitiesForExisitingAlts(aggregate: ContigAggregate) = {
     val altsPositions = aggregate.getAltPositionsForRange(r.getStart, r.getEnd)
     for (pos <- altsPositions)
-      aggregate.updateQuals(pos.toInt,ReadConsts.REF_SYMBOL, 10)
+      aggregate.updateQuals(pos.toInt,ReadConsts.REF_SYMBOL, ReadConsts.FREQ_QUAL) //fixme get real values from BQString
   }
 
   def analyzeRead(contig: String,
@@ -127,11 +127,14 @@ case class ExtendedReads(r:SAMRecord) {
 
         val indexInSeq = calculatePositionInReadSeq(position - read.getStart -delCounter)
         val altBase = getAltBaseFromSequence(indexInSeq)
+        val altBaseQual = getAltBaseQualFromSequence(indexInSeq)
         val altPosition = position - clipLen - 1
         val newAlt = !eventAggregate.hasAltOnPosition(altPosition)
         eventAggregate.updateAlts(altPosition, altBase)
+        eventAggregate.updateQuals(altPosition, altBase, altBaseQual)
         if (newAlt && qual)
           fillPastQualitiesFromCache(eventAggregate, altPosition, qualityCache)
+
       }
       else if(mdtag.base == 'S')
         position += mdtag.length
@@ -139,6 +142,8 @@ case class ExtendedReads(r:SAMRecord) {
   }
 
   private def getAltBaseFromSequence(position: Int):Char = this.r.getReadString.charAt(position-1)
+
+  private def getAltBaseQualFromSequence(position: Int):Short = this.r.getBaseQualityString.charAt(position-1).toShort
 
   private def updateMaxCigarInContig(cigarLen:Int, contig: String, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
     if (cigarLen > contigMaxReadLen(contig))

@@ -88,6 +88,9 @@ object PileupProjection {
       wordSize
   }
 
+  private def calculateArraySize(arr: Array[Short]): Int =
+    wordSize + calculateArrayNullRegionLen(arr.length) + roundUp(arr.length *shortSize, wordSize)
+
   def calculateAltsMapSizes(map: Map[Byte,Short]): (Int, Int, Int)= {
     val numElements = map.size
     val arrayNullRegionLen = calculateArrayNullRegionLen(numElements)
@@ -105,11 +108,9 @@ object PileupProjection {
 
     val keysArraySize = wordSize + arrayNullRegionLen + roundUp(numElements*byteSize, wordSize)
     var shortArraysSize = 0
-    var singleArraySize = 0
-    for (k <- map.keys){
-      singleArraySize = wordSize + arrayNullRegionLen + roundUp(map(k).length *shortSize, wordSize)
-      shortArraysSize += singleArraySize
-    }
+    for (k <- map.keys)
+      shortArraysSize += calculateArraySize(map(k))
+
     val valuesArraySize = wordSize + arrayNullRegionLen + roundUp(shortArraysSize, wordSize) + map.size *wordSize
     val mapSize = wordSize + keysArraySize + valuesArraySize
     (mapSize, keysArraySize, valuesArraySize)
@@ -230,7 +231,7 @@ object PileupProjection {
     val row = new UnsafeRow(numFields)
     row.pointTo(data, data.length)
     if (altsMap == null)
-      row.setNullAt(7) // currently nulls alts map as last field
+      row.setNullAt(7)
     if (qualsMap == null)
       row.setNullAt(8)
     row

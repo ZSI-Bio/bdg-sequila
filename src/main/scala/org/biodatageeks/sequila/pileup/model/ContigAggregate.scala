@@ -58,7 +58,9 @@ case class ContigAggregate(
     val altByte = alt.toByte
 
     val qualMap = quals.getOrElse(position, new SingleLocusQuals())
-    qualMap.getOrElse(altByte, new ArrayBuffer[Short]()).append(quality)
+    val array = qualMap.getOrElse(altByte, new ArrayBuffer[Short]())
+    array.append(quality)
+    qualMap.update(altByte,array)
     quals.update(position, qualMap)
   }
 

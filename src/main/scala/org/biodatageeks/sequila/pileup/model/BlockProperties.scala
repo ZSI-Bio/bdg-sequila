@@ -4,7 +4,8 @@ import scala.collection.mutable
 
 class BlockProperties {
   var cov, len, pos = 0
-  var  alt = mutable.HashMap[Byte, Short]()
+  var  alt = new SingleLocusAlts()
+  var quals = new SingleLocusQuals()
   def reset (position: Int) = {
     len = 0
     pos = position

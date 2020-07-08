@@ -43,7 +43,7 @@ object PileupMethods {
       spark.sparkContext.broadcast(accumulator.value().prepareOverlaps())
     }
     val adjustedEvents = AdjustedEventsTimer.time {aggregates.adjustWithOverlaps(broadcast) }
-    val pileup = EventsToPileupTimer.time {adjustedEvents.toPileup}
+    val pileup = EventsToPileupTimer.time {adjustedEvents.toPileup(qual)}
     pileup
   }
 }

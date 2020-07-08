@@ -22,8 +22,8 @@ class QualityCache(size: Int) {
 
   def getReadsOverlappingPosition(position: Int): Array[ReadQualSummary] = {
     val buffer = new ArrayBuffer[ReadQualSummary]()
-    for (rs <- cache) {
-      if (rs != null && rs.start>= position && rs.end <= position)
+    for (rs <- this.cache) {
+      if (rs != null && rs.start<= position && rs.end >= position)
         buffer.append(rs)
     }
     buffer.toArray
@@ -32,10 +32,14 @@ class QualityCache(size: Int) {
 }
 
 case class ReadQualSummary (start: Int, end: Int, qualString: String, cigar: String) {
-  def getBaseQualityForPosition(position: Int): Short = {
-    qualString.charAt(relativePosition(position)).toShort
 
+  def getBaseQualityForPosition(position: Int): Short = {
+    val relPos = relativePosition(position)
+    //fixme make sure, not going out of bounds
+    val finalPos = if(relPos >= qualString.length) qualString.length-1 else relPos
+    qualString.charAt(finalPos).toShort
   }
+
   private def relativePosition(absPosition: Int):Int = absPosition - start // FIXME take clips into account
 
 

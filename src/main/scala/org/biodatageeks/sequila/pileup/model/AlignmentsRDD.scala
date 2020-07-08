@@ -57,7 +57,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
             }
 
           AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen, qual, contigQualityCache)}
-          if (qual) read.addToCache(contigQualityCache, readCounter, contigMaxReadLen(contig))
+          if (qual)
+            read.addToCache(contigQualityCache, readCounter, contigMaxReadLen(contig))
         }
         PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
       }

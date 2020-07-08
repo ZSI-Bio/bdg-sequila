@@ -7,6 +7,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.biodatageeks.sequila.pileup.conf.Conf
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
+import org.biodatageeks.sequila.utils.ReadConsts
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -100,12 +101,26 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     val posStart, posEnd = i+agg.startPosition-1
     val ref = bases.substring(prev.pos, i)
     val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
-    val qualsMap = if (Conf.includeBaseQualities) agg.quals(posStart).map{case (k,v) => (k, v.toArray[Short])}.toMap else null
+    val qualsMap = prepareOutputQualMap(agg, posStart, ref)
     result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualsMap)
     prev.alt.clear()
   }
+
+  private def prepareOutputQualMap(agg: ContigAggregate, posStart: Int, ref:String): Map[Byte, Array[Short]] = {
+    if (Conf.includeBaseQualities) {
+      agg.quals(posStart).map {
+        case (k, v) =>
+          if (k != ReadConsts.REF_SYMBOL)
+            (k, v.toArray[Short])
+          else
+            (ref.charAt(0).toByte, v.toArray[Short])
+      }.toMap
+    }
+    else null
+  }
+
   private def addBlockRecord(result:Array[InternalRow], ind:Int,
-                     agg:ContigAggregate, bases:String, i:Int, prev:BlockProperties) {
+                             agg:ContigAggregate, bases:String, i:Int, prev:BlockProperties) {
     val ref = bases.substring(prev.pos, i)
     val posStart=i+agg.startPosition-prev.len
     val posEnd=i+agg.startPosition-1

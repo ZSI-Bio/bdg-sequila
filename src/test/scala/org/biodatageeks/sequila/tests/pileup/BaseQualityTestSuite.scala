@@ -20,7 +20,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
-    result.show(20, truncate = false)
+    result.show(50, truncate = false)
   }
 
 }

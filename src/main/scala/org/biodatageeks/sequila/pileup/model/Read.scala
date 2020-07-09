@@ -17,13 +17,6 @@ object ReadOperations {
 
 case class ExtendedReads(r:SAMRecord) {
 
-  def fillBaseQualitiesForExisitingAlts(aggregate: ContigAggregate, blackList:Seq[Long]) = {
-    val altsPositions = aggregate.getAltPositionsForRange(r.getStart, r.getEnd)
-    val updatePositions = altsPositions diff blackList
-    for (pos <- updatePositions)
-      aggregate.updateQuals(pos.toInt,ReadConsts.REF_SYMBOL, ReadConsts.FREQ_QUAL) //fixme get real values from BQString
-  }
-
   def analyzeRead(contig: String,
                   aggregate: ContigAggregate,
                   contigMaxReadLen: mutable.HashMap[String, Int],
@@ -31,17 +24,11 @@ case class ExtendedReads(r:SAMRecord) {
 
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
     val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(aggregate, qualityCache) }
-    if (Conf.includeBaseQualities) fillBaseQualitiesForExisitingAlts(aggregate, foundAlts)
-
-
-  }
-
-  def addToCache(qualityCache: QualityCache, counter: Int, maxLen: Int) = {
-    val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigarString)
-    if (maxLen > qualityCache.length)
-      qualityCache.resize(maxLen)
-    qualityCache((counter-1)%maxLen) = readQualSummary
-
+    if (Conf.includeBaseQualities) {
+      val readQualSummary = ReadQualSummary(r.getReadName, r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
+      fillBaseQualitiesForExistingAlts(aggregate, foundAlts, readQualSummary)
+      addToCache(qualityCache, contigMaxReadLen(contig), readQualSummary)
+    }
   }
 
   def calculateEvents(contig: String, aggregate: ContigAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
@@ -101,14 +88,6 @@ case class ExtendedReads(r:SAMRecord) {
     mdPosition + numInsertions
   }
 
-  def fillPastQualitiesFromCache(eventAggregate: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
-    val reads = qualityCache.getReadsOverlappingPosition(altPosition)
-    for (read <- reads) {
-      val qual = read.getBaseQualityForPosition(altPosition)
-      eventAggregate.updateQuals(altPosition, ReadConsts.REF_SYMBOL, qual )
-    }
-  }
-
   private def calculateAlts(aggregate: ContigAggregate, qualityCache: QualityCache): Seq[Long] = {
     val read = this.r
     var position = read.getStart
@@ -147,6 +126,30 @@ case class ExtendedReads(r:SAMRecord) {
     altsPositions.toSeq
   }
 
+  def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:Seq[Long], readQualSummary: ReadQualSummary): Unit = {
+    val altsPositions = agg.getAltPositionsForRange(r.getStart, r.getEnd)
+    val updatePositions = altsPositions diff blackList
+    for (pos <- updatePositions) {
+      if(!readQualSummary.hasDeletionOnPosition(pos))
+        agg.updateQuals(pos.toInt, ReadConsts.REF_SYMBOL, ReadConsts.FREQ_QUAL) //fixme get real values from BQString
+    }
+  }
+  def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {
+    if (maxLen * ReadConsts.CACHE_EXPANDER > qualityCache.length)
+      qualityCache.resize(maxLen*ReadConsts.CACHE_EXPANDER)
+    qualityCache.addOrReplace(readQualSummary)
+
+  }
+
+  def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
+    val reads = qualityCache.getReadsOverlappingPosition(altPosition)
+    for (read <- reads) {
+      val qual = read.getBaseQualityForPosition(altPosition)
+      agg.updateQuals(altPosition, ReadConsts.REF_SYMBOL, qual )
+    }
+  }
+
+
   private def getAltBaseFromSequence(position: Int):Char = this.r.getReadString.charAt(position-1)
 
   private def getAltBaseQualFromSequence(position: Int):Short = this.r.getBaseQualityString.charAt(position-1).toShort
@@ -155,5 +158,6 @@ case class ExtendedReads(r:SAMRecord) {
     if (cigarLen > contigMaxReadLen(contig))
       contigMaxReadLen(contig) = cigarLen
   }
+
 
 }

@@ -71,4 +71,5 @@ object Columns {
 object ReadConsts {
   final val REF_SYMBOL = 'R'
   final val FREQ_QUAL= 'F'.toShort
+  final val CACHE_EXPANDER=5
 }

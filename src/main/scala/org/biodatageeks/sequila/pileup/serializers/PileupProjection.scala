@@ -82,8 +82,8 @@ object PileupProjection {
   private def roundUp(value: Int, divisibleBy:Int): Int = (Math.ceil(value.toDouble / divisibleBy) * divisibleBy).toInt
 
   private def calculateArrayNullRegionLen(numElements: Int): Int = {
-    if (roundUp(Math.ceil(numElements / wordSize).toInt, wordSize) != 0)
-      roundUp(Math.ceil(numElements / wordSize).toInt, wordSize)
+    if (roundUp(Math.ceil(numElements / wordSize.toDouble).toInt, wordSize) != 0)
+      roundUp(Math.ceil(numElements / wordSize.toDouble).toInt, wordSize)
     else
       wordSize
   }
@@ -139,9 +139,12 @@ object PileupProjection {
     var offsetWRTBase = wordSize + nullArrayRegionLen + fixedRegionLen
     for (i <- array.indices) {
       data(elementsOffset + i*wordSize) = array(i).length.toByte
-      data(elementsOffset + i*wordSize + 4) = offsetWRTBase.toByte
+      writeNumber(data,offsetWRTBase, elementsOffset + i*wordSize + 4)
+      //data(elementsOffset + i*wordSize + 4) = offsetWRTBase.toByte
       writeArray(data, array(i), offsetWRTBase + offset)
-      val singleArraySize = wordSize + nullArrayRegionLen + roundUp(array(i).length * shortSize, wordSize)
+      val singleArraySize2 = wordSize + nullArrayRegionLen + roundUp(array(i).length * shortSize, wordSize)
+      val singleArraySize = calculateArraySize(array(i))
+
       offsetWRTBase += singleArraySize
     }
   }

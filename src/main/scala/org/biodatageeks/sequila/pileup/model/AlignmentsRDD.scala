@@ -5,7 +5,7 @@ import java.util
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer, AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
-import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
+import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath, ReadConsts}
 
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
@@ -35,11 +35,9 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       var contigCleanIter  = ""
       var contigAggregate: ContigAggregate = null
       var contigQualityCache: QualityCache = null
-      var readCounter = 0
       MapPartitionTimer.time {
         while (partition.hasNext) {
           val read = BAMReadTimer.time {partition.next()}
-          readCounter += 1
           val contig = DQTimerTimer.time {
             if(read.getContig == contigIter)
               contigCleanIter
@@ -58,8 +56,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
             }
 
           AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen, contigQualityCache)}
-          if (Conf.includeBaseQualities)
-            read.addToCache(contigQualityCache, readCounter, contigMaxReadLen(contig))
+
+
         }
         PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
       }
@@ -121,7 +119,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0
 
-    val qualityCache = new QualityCache(read.getCigarLength)
+    val qualityCache = new QualityCache(read.getReadLength*ReadConsts.CACHE_EXPANDER)
     qualityCacheByContig += contig -> qualityCache
 
   }

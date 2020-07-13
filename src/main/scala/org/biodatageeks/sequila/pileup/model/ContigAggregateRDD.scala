@@ -4,10 +4,9 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.biodatageeks.sequila.pileup.conf.Conf
+import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
-import org.biodatageeks.sequila.utils.ReadConsts
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -42,6 +41,9 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
   }
 
   def toPileup: RDD[InternalRow] = {
+
+    println("to pileup")
+
 
     this.rdd.mapPartitions { part =>
       val contigMap = Reference.getNormalizedContigMap
@@ -101,20 +103,22 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     val posStart, posEnd = i+agg.startPosition-1
     val ref = bases.substring(prev.pos, i)
     val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
-    val qualsMap = prepareOutputQualMap(agg, posStart, ref)
+    val qualsMap = prepareOutputQualMap(agg, posStart, ref, prev.cov.toShort)
     result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualsMap)
     prev.alt.clear()
   }
 
-  private def prepareOutputQualMap(agg: ContigAggregate, posStart: Int, ref:String): Map[Byte, Array[Short]] = {
+  private def prepareOutputQualMap(agg: ContigAggregate, posStart: Int, ref:String, cov: Short): Map[Byte, Array[Short]] = {
     if (Conf.includeBaseQualities) {
-      agg.quals(posStart).map {
+      val qualsMap = agg.quals(posStart).map {
         case (k, v) =>
-          if (k != ReadConsts.REF_SYMBOL)
+          if (k != QualityConstants.REF_SYMBOL)
             (k, v.toArray[Short])
           else
             (ref.charAt(0).toByte, v.toArray[Short])
       }.toMap
+      assert(qualsMap.foldLeft(0)(_+_._2.length).toShort == cov.toShort)
+      qualsMap
     }
     else null
   }

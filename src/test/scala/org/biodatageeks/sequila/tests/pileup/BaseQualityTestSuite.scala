@@ -3,9 +3,6 @@ package org.biodatageeks.sequila.tests.pileup
 import org.apache.spark.sql.{DataFrame, SequilaSession}
 import org.biodatageeks.sequila.utils.{Columns, InternalParams, SequilaRegister}
 
-import scala.collection.mutable
-
-
 class BaseQualityTestSuite extends PileupTestBase {
 
   val splitSize = "1000000"
@@ -33,7 +30,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     assert(result.count()==14671)
 
 //    result.where(s"$covEquality=false").show(20)
-//
+
     val equals = result.select(covEquality).distinct()
     assert(equals.count()==1)
     assert(equals.head.getBoolean(0))

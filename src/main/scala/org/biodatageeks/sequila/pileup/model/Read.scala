@@ -2,9 +2,8 @@ package org.biodatageeks.sequila.pileup.model
 
 import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.biodatageeks.sequila.pileup.MDTagParser
-import org.biodatageeks.sequila.pileup.conf.Conf
+import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
-import org.biodatageeks.sequila.utils.ReadConsts
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -131,12 +130,12 @@ case class ExtendedReads(r:SAMRecord) {
     val updatePositions = altsPositions diff blackList
     for (pos <- updatePositions) {
       if(!readQualSummary.hasDeletionOnPosition(pos))
-        agg.updateQuals(pos.toInt, ReadConsts.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt)) //fixme get real values from BQString
+        agg.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt)) //fixme get real values from BQString
     }
   }
   def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {
-    if (maxLen * ReadConsts.CACHE_EXPANDER > qualityCache.length)
-      qualityCache.resize(maxLen*ReadConsts.CACHE_EXPANDER)
+    if (maxLen * QualityConstants.CACHE_EXPANDER > qualityCache.length)
+      qualityCache.resize(maxLen*QualityConstants.CACHE_EXPANDER)
     qualityCache.addOrReplace(readQualSummary)
 
   }
@@ -145,7 +144,7 @@ case class ExtendedReads(r:SAMRecord) {
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)
     for (read <- reads) {
       val qual = read.getBaseQualityForPosition(altPosition)
-      agg.updateQuals(altPosition, ReadConsts.REF_SYMBOL, qual )
+      agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, qual )
     }
   }
 
@@ -158,6 +157,5 @@ case class ExtendedReads(r:SAMRecord) {
     if (cigarLen > contigMaxReadLen(contig))
       contigMaxReadLen(contig) = cigarLen
   }
-
 
 }

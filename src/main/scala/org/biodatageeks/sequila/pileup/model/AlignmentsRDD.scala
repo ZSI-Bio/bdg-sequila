@@ -5,11 +5,11 @@ import java.util
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer, AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
-import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath, ReadConsts}
+import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
 
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
-import org.biodatageeks.sequila.pileup.conf.Conf
+import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 
 object AlignmentsRDDOperations {
   object implicits {
@@ -119,7 +119,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0
 
-    val qualityCache = new QualityCache(read.getReadLength*ReadConsts.CACHE_EXPANDER)
+    val qualityCache = new QualityCache(read.getReadLength*QualityConstants.CACHE_EXPANDER)
     qualityCacheByContig += contig -> qualityCache
 
   }

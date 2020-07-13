@@ -41,7 +41,7 @@ object PileupApp extends App{
     val query =
       s"""
          |SELECT count(*)
-         |FROM  pileup('$tableNameBAM', 'NA12878', '${referencePath}')
+         |FROM  pileup('$tableNameBAM', 'NA12878', '${referencePath}', true)
        """.stripMargin
     ss
       .sqlContext

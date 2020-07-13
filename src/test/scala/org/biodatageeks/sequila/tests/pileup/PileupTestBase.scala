@@ -73,7 +73,6 @@ class PileupTestBase extends FunSuite
     val covEquality = (originalCov:Short, qualityCov:Short) => originalCov==qualityCov
 
 
-
     spark.udf.register("mapToString", mapToString)
     spark.udf.register("byteToString", byteToString)
     spark.udf.register("qualMapToCoverage", qualMapToCoverage)

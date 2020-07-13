@@ -131,7 +131,7 @@ case class ExtendedReads(r:SAMRecord) {
     val updatePositions = altsPositions diff blackList
     for (pos <- updatePositions) {
       if(!readQualSummary.hasDeletionOnPosition(pos))
-        agg.updateQuals(pos.toInt, ReadConsts.REF_SYMBOL, ReadConsts.FREQ_QUAL) //fixme get real values from BQString
+        agg.updateQuals(pos.toInt, ReadConsts.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt)) //fixme get real values from BQString
     }
   }
   def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {

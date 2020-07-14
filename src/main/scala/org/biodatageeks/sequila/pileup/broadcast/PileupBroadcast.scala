@@ -1,6 +1,9 @@
-package org.biodatageeks.sequila.pileup.model
+package org.biodatageeks.sequila.pileup.broadcast
 
 import org.apache.spark.util.AccumulatorV2
+import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
+import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
+import org.biodatageeks.sequila.pileup.model.{MultiLociAlts, MultiLociQuals}
 import org.biodatageeks.sequila.utils.FastMath
 
 import scala.collection.mutable
@@ -52,10 +55,10 @@ class PileupUpdate(
     this
   }
 
-  def prepareOverlaps(): UpdateStruct = {
+  def prepareOverlaps(): FullCorrections = {
 
-    val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]()
-    val shrinkMap = new mutable.HashMap[(String, Int), Int]()
+    val correctionsMap = new PartitionCorrections()
+    val shrinksMap = new PartitionShrinks()
 
     var it = 0
     for (range <- ranges.sortBy(r => (r.contig, r.minPos))) {
@@ -64,51 +67,17 @@ class PileupUpdate(
       val cumSum = range.precedingCumulativeSum(tails)
 
       if(overlaps.isEmpty)
-        updateMap += (range.contig, range.minPos) -> (None, None, None, cumSum)
+        correctionsMap += (range.contig, range.minPos) -> Correction(None, None, None, cumSum)
       else { // if there are  overlaps for this contigRange
         for(o <- overlaps) {
           val overlapLength = calculateOverlapLength(o, range, it, ranges)
-          updateShrinksByOverlap(o, range, shrinkMap)
-          updateUpdateByOverlap(o, overlapLength, range, cumSum, updateMap)
+          correctionsMap.updateWithOverlap(o, range, overlapLength, cumSum)
+          shrinksMap.updateWithOverlap(o,range)
         }
       }
       it += 1
     }
-    UpdateStruct(updateMap, shrinkMap)
-  }
-
-
-  private def updateUpdateByOverlap(o: Tail, overlapLength: Int, range: Range, cumSum: Short, updateMap: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]) = {
-    updateMap.get((range.contig, range.minPos)) match {
-      case Some(up) =>
-        val arrEvents = Array.fill[Short](math.max(0, o.startPoint - range.minPos))(0) ++ o.events.takeRight(overlapLength)
-        val newArrEvents = up._1.get.zipAll(arrEvents, 0.toShort, 0.toShort).map { case (x, y) => (x + y).toShort }
-
-        val newAlts = (up._2.get ++ o.alts).asInstanceOf[MultiLociAlts]
-        val newQuals=(up._3.get ++ o.quals).asInstanceOf[MultiLociQuals]
-
-        val newCumSum = (up._4 - FastMath.sumShort(o.events.takeRight(overlapLength)) ).toShort
-
-        if (o.minPos < range.minPos)
-          updateMap.update((range.contig, range.minPos), (Some(newArrEvents), Some(newAlts), Some(newQuals), newCumSum))
-        else
-          updateMap.update((range.contig, o.minPos), (Some(newArrEvents), Some(newAlts), Some(newQuals), newCumSum)) // delete anything that is > range.minPos
-      case _ =>
-        updateMap +=
-          (range.contig, range.minPos) ->
-            (
-              Some(Array.fill[Short](math.max(0, o.startPoint - range.minPos))(0) ++ o.events.takeRight(overlapLength)),
-              Some(o.alts),Some(o.quals),
-              (cumSum - FastMath.sumShort(o.events.takeRight(overlapLength)) ).toShort
-            )
-    }
-  }
-
-  @inline private def updateShrinksByOverlap(o: Tail, range: Range, shrinkMap: mutable.HashMap[(String, Int), Int]) = {
-    shrinkMap.get((o.contig, o.minPos)) match {
-      case Some(s) => shrinkMap.update((o.contig, o.minPos), math.min(s, range.minPos - o.minPos + 1))
-      case _ => shrinkMap += (o.contig, o.minPos) -> (range.minPos - o.minPos + 1)
-    }
+    FullCorrections(correctionsMap, shrinksMap)
   }
 
   @inline private def calculateOverlapLength(o: Tail, range: Range, it: Int, ranges: ArrayBuffer[Range]) = {
@@ -154,4 +123,6 @@ case class UpdateStruct(
                          upd: mutable.HashMap[(String,Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)],
                          shrink: mutable.HashMap[(String,Int), Int]
                        )
+
+
 

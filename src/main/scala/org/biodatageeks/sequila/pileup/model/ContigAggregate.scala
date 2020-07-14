@@ -1,10 +1,13 @@
 package org.biodatageeks.sequila.pileup.model
 
 import org.apache.spark.broadcast.Broadcast
+import org.biodatageeks.sequila.pileup.broadcast
+import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
+import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
+import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupUpdate, Tail}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, ShrinkAltsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer}
 import org.biodatageeks.sequila.utils.FastMath
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -23,7 +26,7 @@ case class ContigAggregate(
                                 ) {
 
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
-  def getRange: Range = Range(contig, startPosition, maxPosition)
+  def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
   def getAltPositionsForRange(start: Int, end: Int): scala.collection.Set[Long] = {
     alts.keySet.filter(pos => pos >= start && pos <= end)
@@ -74,13 +77,13 @@ case class ContigAggregate(
     val tailAlts = TailAltsTimer.time {alts.filter(_._1 >= tailStartIndex)}
     val tailQuals = quals.filter(_._1 >= tailStartIndex)
     val cumSum = FastMath.sumShort(events)
-    val tail = TailEdgeTimer.time {Tail(contig, startPosition, tailStartIndex, tailCov, tailAlts, tailQuals,cumSum)}
+    val tail = TailEdgeTimer.time {broadcast.Tail(contig, startPosition, tailStartIndex, tailCov, tailAlts, tailQuals,cumSum)}
     tail
   }
 
-  def getAdjustedAggregate(b:Broadcast[UpdateStruct]): ContigAggregate = {
-    val upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts],Option[MultiLociQuals], Short)] = b.value.upd
-    val shrink = b.value.shrink
+  def getAdjustedAggregate(b:Broadcast[FullCorrections]): ContigAggregate = {
+    val upd: PartitionCorrections = b.value.corrections
+    val shrink:PartitionShrinks = b.value.shrinks
 
     val adjustedEvents = CalculateEventsTimer.time { calculateAdjustedEvents(upd) }
     val adjustedAlts = CalculateAltsTimer.time{ calculateAdjustedAlts(upd) }
@@ -93,18 +96,18 @@ case class ContigAggregate(
     ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, shrinkedQualsMap, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen)
   }
 
-  private def calculateAdjustedEvents(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]): Array[Short] = {
+  private def calculateAdjustedEvents(upd: PartitionCorrections): Array[Short] = {
     var eventsArrMutable = events
 
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some((arrEvents, _, _, covSum)) => // array of covs and cumSum
-        arrEvents match {
+      case Some(correction) => // array of covs and cumSum
+        correction.events match {
           case Some(overlapArray) =>
             if (overlapArray.length > events.length)
               eventsArrMutable =  events ++ Array.fill[Short](overlapArray.length - events.length)(0) // extend array
 
             var i = 0
-            eventsArrMutable(i) = (eventsArrMutable(i) + covSum).toShort // add cumSum to zeroth element
+            eventsArrMutable(i) = (eventsArrMutable(i) + correction.cumulativeSum).toShort // add cumSum to zeroth element
 
             while (i < overlapArray.length) {
               eventsArrMutable(i) = (eventsArrMutable(i) + overlapArray(i)).toShort
@@ -112,17 +115,17 @@ case class ContigAggregate(
             }
             eventsArrMutable
           case None =>
-            eventsArrMutable(0) = (eventsArrMutable(0) + covSum).toShort
+            eventsArrMutable(0) = (eventsArrMutable(0) + correction.cumulativeSum).toShort
             eventsArrMutable
         }
       case None => eventsArrMutable
     }
   }
 
-  private def calculateAdjustedAlts(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts],Option[MultiLociQuals],  Short)]): MultiLociAlts = {
+  private def calculateAdjustedAlts(upd:PartitionCorrections): MultiLociAlts = {
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some((_, updAlts, _, _)) => // covs alts cumSum
-        updAlts match {
+      case Some(correction) => // covs alts cumSum
+        correction.alts match {
           case Some(overlapAlts) => FastMath.mergeNestedMaps(alts, overlapAlts)
           case None => alts
         }
@@ -130,10 +133,10 @@ case class ContigAggregate(
     }
   }
 
-  private def calculateAdjustedQuals(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]): MultiLociQuals = {
+  private def calculateAdjustedQuals(upd:PartitionCorrections): MultiLociQuals = {
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some((_, _, updQuals, _)) =>
-        updQuals match {
+      case Some(correction) =>
+        correction.quals match {
           case Some(overlapQuals) => FastMath.mergeQualMaps(quals, overlapQuals)
           case None => quals
         }
@@ -141,27 +144,27 @@ case class ContigAggregate(
     }
   }
 
-  private def calculateShrinkedEventsSize[T](shrink: mutable.HashMap[(String, Int), Int], updArray: Array[T]): Int = {
+  private def calculateShrinkedEventsSize[T](shrink: PartitionShrinks, updArray: Array[T]): Int = {
     shrink.get((contig, startPosition)) match {
-      case Some(len) => len
+      case Some(shrink) => shrink.index
       case None => updArray.length
     }
   }
 
-  private def calculateShrinkedAlts[T](shrink: mutable.HashMap[(String, Int), Int], altsMap: MultiLociAlts): MultiLociAlts = {
+  private def calculateShrinkedAlts[T](shrink: PartitionShrinks, altsMap: MultiLociAlts): MultiLociAlts = {
     shrink.get((contig, startPosition)) match {
-      case Some(len) =>
-        val cutoffPosition = maxPosition - len
-        altsMap.filter(_._1 > cutoffPosition)
+      case Some(shrink) =>
+        val cutoffPosition = shrink.index
+        altsMap.filter(_._1 < cutoffPosition)
       case None => altsMap
     }
   }
 
-  private def calculateShrinkedQuals[T](shrink: mutable.HashMap[(String, Int), Int], qualsMap: MultiLociQuals): MultiLociQuals = {
+  private def calculateShrinkedQuals[T](shrink: PartitionShrinks, qualsMap: MultiLociQuals): MultiLociQuals = {
     shrink.get((contig, startPosition)) match {
-      case Some(len) =>
-        val cutoffPosition = maxPosition - len
-        qualsMap.filter(_._1 > cutoffPosition)
+      case Some(shrink) =>
+        val cutoffPosition = shrink.index
+        qualsMap.filter(_._1 < cutoffPosition)
       case None => qualsMap
     }
   }

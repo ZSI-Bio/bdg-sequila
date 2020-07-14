@@ -4,6 +4,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
+import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupAccumulator, PileupUpdate, Range, Tail}
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
@@ -36,7 +37,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     accumulator
   }
 
-  def adjustWithOverlaps(b: Broadcast[UpdateStruct])
+  def adjustWithOverlaps(b: Broadcast[FullCorrections])
   : RDD[ContigAggregate] = {
     this.rdd map { agg =>  agg.getAdjustedAggregate(b)}
   }

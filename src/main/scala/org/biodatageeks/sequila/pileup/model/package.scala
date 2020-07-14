@@ -1,7 +1,7 @@
 package org.biodatageeks.sequila.pileup
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ArrayBuffer
 
 package object model {
   type SingleLocusAlts = mutable.HashMap[Byte,Short]
@@ -18,4 +18,14 @@ package object model {
 
   type QualityCacheByContig = mutable.HashMap[String, QualityCache]
   val QualityCacheByContig = mutable.HashMap[String, QualityCache] _
+
+
+  implicit class SingleLocusQualsExtension(val map: SingleLocusQuals) {
+    def derivedCoverage:Short = map.foldLeft(0)(_+_._2.length).toShort
+  }
+
+  implicit class SingleLocusAltsExtension(val map: SingleLocusAlts) {
+    def derivedAltsNumber:Short = map.foldLeft(0)(_+_._2).toShort
+  }
+
 }

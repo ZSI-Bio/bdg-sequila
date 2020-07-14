@@ -7,6 +7,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
+import org.biodatageeks.sequila.pileup.model._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -99,7 +100,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
                     agg:ContigAggregate, bases:String, i:Int, prev:BlockProperties) {
     val posStart, posEnd = i+agg.startPosition-1
     val ref = bases.substring(prev.pos, i)
-    val altsCount = prev.alt.foldLeft(0)(_ + _._2).toShort
+    val altsCount = prev.alt.derivedAltsNumber
     val qualsMap = prepareOutputQualMap(agg, posStart, ref, prev.cov.toShort)
     result(ind) = PileupProjection.convertToRow(agg.contig, posStart, posEnd, ref, prev.cov.toShort, (prev.cov-altsCount).toShort,altsCount, prev.alt.toMap, qualsMap)
     prev.alt.clear()
@@ -107,15 +108,15 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
 
   private def prepareOutputQualMap(agg: ContigAggregate, posStart: Int, ref:String, cov: Short): Map[Byte, Array[Short]] = {
     if (Conf.includeBaseQualities) {
-      val qualsMap = agg.quals(posStart).map {
+      val qualsMap = agg.quals(posStart)
+      assert(qualsMap.derivedCoverage == cov.toShort)
+      agg.quals(posStart).map {
         case (k, v) =>
           if (k != QualityConstants.REF_SYMBOL)
             (k, v.toArray[Short])
           else
             (ref.charAt(0).toByte, v.toArray[Short])
       }.toMap
-      //assert(qualsMap.foldLeft(0)(_+_._2.length).toShort == cov.toShort)
-      qualsMap
     }
     else null
   }

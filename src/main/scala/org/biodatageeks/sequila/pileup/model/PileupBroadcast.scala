@@ -13,6 +13,7 @@ case class Tail(
                      startPoint: Int,
                      events: Array[Short],
                      alts: MultiLociAlts,
+                     quals: MultiLociQuals,
                      cumSum: Short
                    )
 
@@ -53,7 +54,7 @@ class PileupUpdate(
 
   def prepareOverlaps(): UpdateStruct = {
 
-    val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]()
+    val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]()
     val shrinkMap = new mutable.HashMap[(String, Int), Int]()
 
     var it = 0
@@ -63,7 +64,7 @@ class PileupUpdate(
       val cumSum = range.precedingCumulativeSum(tails)
 
       if(overlaps.isEmpty)
-        updateMap += (range.contig, range.minPos) -> (None, None, cumSum)
+        updateMap += (range.contig, range.minPos) -> (None, None, None, cumSum)
       else { // if there are  overlaps for this contigRange
         for(o <- overlaps) {
           val overlapLength = calculateOverlapLength(o, range, it, ranges)
@@ -77,26 +78,27 @@ class PileupUpdate(
   }
 
 
-  private def updateUpdateByOverlap(o: Tail, overlapLength: Int, range: Range, cumSum: Short, updateMap: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]) = {
+  private def updateUpdateByOverlap(o: Tail, overlapLength: Int, range: Range, cumSum: Short, updateMap: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]) = {
     updateMap.get((range.contig, range.minPos)) match {
       case Some(up) =>
         val arrEvents = Array.fill[Short](math.max(0, o.startPoint - range.minPos))(0) ++ o.events.takeRight(overlapLength)
         val newArrEvents = up._1.get.zipAll(arrEvents, 0.toShort, 0.toShort).map { case (x, y) => (x + y).toShort }
 
         val newAlts = (up._2.get ++ o.alts).asInstanceOf[MultiLociAlts]
+        val newQuals=(up._3.get ++ o.quals).asInstanceOf[MultiLociQuals]
 
-        val newCumSum = (up._3 - FastMath.sumShort(o.events.takeRight(overlapLength)) ).toShort
+        val newCumSum = (up._4 - FastMath.sumShort(o.events.takeRight(overlapLength)) ).toShort
 
         if (o.minPos < range.minPos)
-          updateMap.update((range.contig, range.minPos), (Some(newArrEvents), Some(newAlts), newCumSum))
+          updateMap.update((range.contig, range.minPos), (Some(newArrEvents), Some(newAlts), Some(newQuals), newCumSum))
         else
-          updateMap.update((range.contig, o.minPos), (Some(newArrEvents), Some(newAlts), newCumSum)) // delete anything that is > range.minPos
+          updateMap.update((range.contig, o.minPos), (Some(newArrEvents), Some(newAlts), Some(newQuals), newCumSum)) // delete anything that is > range.minPos
       case _ =>
         updateMap +=
           (range.contig, range.minPos) ->
             (
               Some(Array.fill[Short](math.max(0, o.startPoint - range.minPos))(0) ++ o.events.takeRight(overlapLength)),
-              Some(o.alts),
+              Some(o.alts),Some(o.quals),
               (cumSum - FastMath.sumShort(o.events.takeRight(overlapLength)) ).toShort
             )
     }
@@ -149,7 +151,7 @@ class PileupAccumulator(var pilAcc: PileupUpdate)
 }
 
 case class UpdateStruct(
-                         upd: mutable.HashMap[(String,Int), (Option[Array[Short]], Option[MultiLociAlts], Short)],
+                         upd: mutable.HashMap[(String,Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)],
                          shrink: mutable.HashMap[(String,Int), Int]
                        )
 

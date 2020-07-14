@@ -22,7 +22,8 @@ class PileupTestSuite extends PileupTestBase {
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
-    result.show(100, truncate = false)
+//    result.show(100, truncate = false)
+//    Writer.saveToFile(ss, result, "bdgNorm.csv")
     performAssertions(result)
   }
 
@@ -33,6 +34,7 @@ class PileupTestSuite extends PileupTestBase {
     val result = ss.sql(pileupQuery)
 //    Writer.saveToFile(ss, result, "bdgSplit.csv")
     performAssertions(result)
+
 
   }
 

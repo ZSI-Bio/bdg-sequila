@@ -1,6 +1,5 @@
 package org.biodatageeks.sequila.pileup.model
 
-
 import scala.collection.mutable.ArrayBuffer
 
 class QualityCache(size: Int) {

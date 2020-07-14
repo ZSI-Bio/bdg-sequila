@@ -72,29 +72,32 @@ case class ContigAggregate(
         events.takeRight(maxSeqLen)
     }
     val tailAlts = TailAltsTimer.time {alts.filter(_._1 >= tailStartIndex)}
+    val tailQuals = quals.filter(_._1 >= tailStartIndex)
     val cumSum = FastMath.sumShort(events)
-    val tail = TailEdgeTimer.time {Tail(contig, startPosition, tailStartIndex, tailCov, tailAlts, cumSum)}
+    val tail = TailEdgeTimer.time {Tail(contig, startPosition, tailStartIndex, tailCov, tailAlts, tailQuals,cumSum)}
     tail
   }
 
   def getAdjustedAggregate(b:Broadcast[UpdateStruct]): ContigAggregate = {
-    val upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)] = b.value.upd
+    val upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts],Option[MultiLociQuals], Short)] = b.value.upd
     val shrink = b.value.shrink
 
     val adjustedEvents = CalculateEventsTimer.time { calculateAdjustedEvents(upd) }
     val adjustedAlts = CalculateAltsTimer.time{ calculateAdjustedAlts(upd) }
+    val adjustedQuals = calculateAdjustedQuals(upd)
 
     val shrinkedEventsSize = ShrinkArrayTimer.time { calculateShrinkedEventsSize(shrink, adjustedEvents) }
     val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
-    //shrink quals TODO
-    ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, quals, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen)
+    val shrinkedQualsMap = calculateShrinkedQuals(shrink, adjustedQuals)
+
+    ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, shrinkedQualsMap, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen)
   }
 
-  private def calculateAdjustedEvents(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]): Array[Short] = {
+  private def calculateAdjustedEvents(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]): Array[Short] = {
     var eventsArrMutable = events
 
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some((arrEvents, _, covSum)) => // array of covs and cumSum
+      case Some((arrEvents, _, _, covSum)) => // array of covs and cumSum
         arrEvents match {
           case Some(overlapArray) =>
             if (overlapArray.length > events.length)
@@ -116,14 +119,25 @@ case class ContigAggregate(
     }
   }
 
-  private def calculateAdjustedAlts(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]): MultiLociAlts = {
+  private def calculateAdjustedAlts(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts],Option[MultiLociQuals],  Short)]): MultiLociAlts = {
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some((_, updAlts, _)) => // covs alts cumSum
+      case Some((_, updAlts, _, _)) => // covs alts cumSum
         updAlts match {
           case Some(overlapAlts) => FastMath.mergeNestedMaps(alts, overlapAlts)
           case None => alts
         }
       case None => alts
+    }
+  }
+
+  private def calculateAdjustedQuals(upd: mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)]): MultiLociQuals = {
+    upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
+      case Some((_, _, updQuals, _)) =>
+        updQuals match {
+          case Some(overlapQuals) => FastMath.mergeQualMaps(quals, overlapQuals)
+          case None => quals
+        }
+      case None => quals
     }
   }
 
@@ -140,6 +154,15 @@ case class ContigAggregate(
         val cutoffPosition = maxPosition - len
         altsMap.filter(_._1 > cutoffPosition)
       case None => altsMap
+    }
+  }
+
+  private def calculateShrinkedQuals[T](shrink: mutable.HashMap[(String, Int), Int], qualsMap: MultiLociQuals): MultiLociQuals = {
+    shrink.get((contig, startPosition)) match {
+      case Some(len) =>
+        val cutoffPosition = maxPosition - len
+        qualsMap.filter(_._1 > cutoffPosition)
+      case None => qualsMap
     }
   }
 }

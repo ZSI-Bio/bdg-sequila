@@ -2,7 +2,7 @@ package org.biodatageeks.sequila.pileup.model
 
 import htsjdk.samtools.{Cigar, CigarOperator}
 
-case class ReadQualSummary (name:String, start: Int, end: Int, qualString: String, cigar: Cigar) {
+case class ReadQualSummary (start: Int, end: Int, qualString: String, cigar: Cigar) {
 
   def getBaseQualityForPosition(position: Int): Short = qualString.charAt(relativePosition(position)).toShort
 

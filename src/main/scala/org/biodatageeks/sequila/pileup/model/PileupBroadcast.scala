@@ -52,6 +52,7 @@ class PileupUpdate(
   }
 
   def prepareOverlaps(): UpdateStruct = {
+
     val updateMap = new mutable.HashMap[(String, Int), (Option[Array[Short]], Option[MultiLociAlts], Short)]()
     val shrinkMap = new mutable.HashMap[(String, Int), Int]()
 

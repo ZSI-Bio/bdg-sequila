@@ -25,8 +25,8 @@ case class ContigAggregate(
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: Range = Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
-  def getAltPositionsForRange(start: Int, end: Int): Seq[Long] = {
-    alts.filter(_._1 >= start).filter(_._1 <= end).keySet.toSeq
+  def getAltPositionsForRange(start: Int, end: Int): scala.collection.Set[Long] = {
+    alts.keySet.filter(pos => pos >= start && pos <= end)
   }
 
 

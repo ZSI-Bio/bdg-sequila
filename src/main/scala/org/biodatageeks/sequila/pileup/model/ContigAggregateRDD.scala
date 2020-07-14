@@ -42,9 +42,6 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
 
   def toPileup: RDD[InternalRow] = {
 
-    println("to pileup")
-
-
     this.rdd.mapPartitions { part =>
       val contigMap = Reference.getNormalizedContigMap
       PileupProjection.setContigMap(contigMap)
@@ -117,7 +114,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
           else
             (ref.charAt(0).toByte, v.toArray[Short])
       }.toMap
-      assert(qualsMap.foldLeft(0)(_+_._2.length).toShort == cov.toShort)
+      //assert(qualsMap.foldLeft(0)(_+_._2.length).toShort == cov.toShort)
       qualsMap
     }
     else null

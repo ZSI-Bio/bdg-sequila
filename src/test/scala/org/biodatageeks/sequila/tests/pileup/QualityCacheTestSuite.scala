@@ -19,10 +19,10 @@ class QualityCacheTestSuite extends FunSuite{
     val cElement = new CigarElement(89, CigarOperator.M)
     val c = new Cigar(seqAsJavaList(List(cElement)))
 
-    val read0 = ReadQualSummary("ddd", 10,12,"32423423", c)
-    val read1 = ReadQualSummary("ddd", 13,14,"44234", c)
-    val read2 = ReadQualSummary("ddd", 19,21,"44234", c)
-    val read3 = ReadQualSummary("ddd", 31,41,"44234", c)
+    val read0 = ReadQualSummary(10,12,"32423423", c)
+    val read1 = ReadQualSummary( 13,14,"44234", c)
+    val read2 = ReadQualSummary(19,21,"44234", c)
+    val read3 = ReadQualSummary( 31,41,"44234", c)
 
     //add
     qualCache.addOrReplace(read0)

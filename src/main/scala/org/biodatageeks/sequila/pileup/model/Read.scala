@@ -24,7 +24,7 @@ case class ExtendedReads(r:SAMRecord) {
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
     val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(aggregate, qualityCache) }
     if (Conf.includeBaseQualities) {
-      val readQualSummary = ReadQualSummary(r.getReadName, r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
+      val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
       fillBaseQualitiesForExistingAlts(aggregate, foundAlts, readQualSummary)
       addToCache(qualityCache, contigMaxReadLen(contig), readQualSummary)
     }
@@ -87,13 +87,13 @@ case class ExtendedReads(r:SAMRecord) {
     mdPosition + numInsertions
   }
 
-  private def calculateAlts(aggregate: ContigAggregate, qualityCache: QualityCache): Seq[Long] = {
+  private def calculateAlts(aggregate: ContigAggregate, qualityCache: QualityCache): scala.collection.Set[Long] = {
     val read = this.r
     var position = read.getStart
     val md = read.getAttribute("MD").toString
     val ops = AnalyzeReadsCalculateAltsParseMDTimer.time { MDTagParser.parseMDTag(md) }
     var delCounter = 0
-    var altsPositions = new ArrayBuffer[Long]()
+    var altsPositions = mutable.Set.empty[Long]
     val clipLen =
       if (read.getCigar.getCigarElement(0).getOperator.isClipping)
         read.getCigar.getCigarElement(0).getLength else 0
@@ -117,15 +117,15 @@ case class ExtendedReads(r:SAMRecord) {
 
         if (newAlt && Conf.includeBaseQualities)
           fillPastQualitiesFromCache(aggregate, altPosition, qualityCache)
-        altsPositions.append(altPosition)
+        altsPositions+=altPosition
       }
       else if(mdtag.base == 'S')
         position += mdtag.length
     }
-    altsPositions.toSeq
+    altsPositions
   }
 
-  def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:Seq[Long], readQualSummary: ReadQualSummary): Unit = {
+  def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:scala.collection.Set[Long], readQualSummary: ReadQualSummary): Unit = {
     val altsPositions = agg.getAltPositionsForRange(r.getStart, r.getEnd)
     val updatePositions = altsPositions diff blackList
     for (pos <- updatePositions) {

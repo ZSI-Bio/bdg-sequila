@@ -27,7 +27,7 @@ class BaseQualityTestSuite extends PileupTestBase {
 
     val result = ss.sql(pileupQuery)
     //result.show(100, truncate = false)
-//    assert(result.count()==14671)
+    assert(result.count()==14671)
     println(result.count())
 
 //    result.where(s"$covEquality=false").show(20)
@@ -45,8 +45,7 @@ class BaseQualityTestSuite extends PileupTestBase {
 
     val result = ss.sql(pileupQuery)
     //result.show(100, truncate = false)
-//    assert(result.count()==14671)
-    println(result.count())
+    assert(result.count()==14671)
 
 //        result.where(s"$covEquality=false").orderBy(s"${Columns.START}").show(20)
 

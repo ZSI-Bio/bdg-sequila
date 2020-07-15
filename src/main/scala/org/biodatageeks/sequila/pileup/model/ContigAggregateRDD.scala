@@ -74,11 +74,13 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
             } else if (prev.isZeroCoverage) // previous ZERO group, clear block
             prev.reset(i)
             prev.alt = agg.alts(i+startPosition)
-          }
-          else if (isEndOfZeroCoverageRegion(cov, prev.cov, i)) { // coming back from zero coverage. clear block
+          } else if (isEndOfZeroCoverageRegion(cov, prev.cov, i)) { // coming back from zero coverage. clear block
             prev.reset(i)
-          }
-          else if (isChangeOfCoverage(cov, prev.cov, i) || isStartOfZeroCoverageRegion(cov, prev.cov)) { // different cov, add to output previous group
+          } else if (isChangeOfCoverage(cov, prev.cov, i) || isStartOfZeroCoverageRegion(cov, prev.cov)) { // different cov, add to output previous group
+            addBlockRecord(result, ind, agg, bases, i, prev)
+            ind += 1;
+            prev.reset(i)
+          }  else if (i==agg.shrinkedEventsArraySize-1) { // last item -> convert it
             addBlockRecord(result, ind, agg, bases, i, prev)
             ind += 1;
             prev.reset(i)

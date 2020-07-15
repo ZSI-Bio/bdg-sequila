@@ -70,7 +70,6 @@ case class ContigAggregate(
   }
 
   def getAdjustedAggregate(b:Broadcast[FullCorrections]): ContigAggregate = {
-
     val upd: PartitionCorrections = b.value.corrections
     val shrink:PartitionShrinks = b.value.shrinks
 
@@ -81,10 +80,10 @@ case class ContigAggregate(
     val newQuals = calculateCompleteQuals(upd,adjustedQuals)
 
     val shrinkedEventsSize = ShrinkArrayTimer.time { calculateShrinkedEventsSize(shrink, adjustedEvents) }
-    val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
-    val shrinkedQualsMap = calculateShrinkedQuals(shrink, newQuals)
+    //val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
+    //val shrinkedQualsMap = calculateShrinkedQuals(shrink, newQuals)
 
-    ContigAggregate(contig, contigLen, adjustedEvents, shrinkedAltsMap, shrinkedQualsMap, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen, null)
+    ContigAggregate(contig, contigLen, adjustedEvents, adjustedAlts, newQuals, startPosition, maxPosition, shrinkedEventsSize, maxSeqLen, null)
   }
 
   private def calculateAdjustedEvents(upd: PartitionCorrections): Array[Short] = {
@@ -204,7 +203,7 @@ case class ContigAggregate(
     shrink.get((contig, startPosition)) match {
       case Some(shrink) =>
         val cutoffPosition = maxPosition - shrink.index
-        altsMap.filter(_._1 < startPosition + cutoffPosition)
+        altsMap.filter(_._1 > cutoffPosition)
       case None => altsMap
     }
   }
@@ -213,7 +212,7 @@ case class ContigAggregate(
     shrink.get((contig, startPosition)) match {
       case Some(shrink) =>
         val cutoffPosition = maxPosition - shrink.index
-        qualsMap.filter(_._1 < startPosition + cutoffPosition)
+        qualsMap.filter(_._1 > cutoffPosition)
       case None => qualsMap
     }
   }

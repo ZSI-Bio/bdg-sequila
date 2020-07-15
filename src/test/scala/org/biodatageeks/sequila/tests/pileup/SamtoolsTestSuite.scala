@@ -47,14 +47,15 @@ class SamtoolsTestSuite extends PileupTestBase {
     val converter = new PileupConverter(spark)
     val sam = converter.transformSamtoolsResult(df).orderBy("contig", "pos_start")
 
+    spark.sqlContext.setConf(InternalParams.InputSplitSize, splitSize)
     val ss = SequilaSession(spark)
     SequilaRegister.register(ss)
-    spark.sqlContext.setConf(InternalParams.InputSplitSize, splitSize)
+
 
     val bdgRes = ss.sql(query).orderBy("contig", "pos_start")
     val samRes = spark.createDataFrame(sam.rdd, bdgRes.schema)
 
-    Writer.saveToFile(spark, samRes, "samRes.csv")
+//    Writer.saveToFile(spark, samRes, "samRes.csv")
     Writer.saveToFile(spark, bdgRes, "bdgResFullSplit.csv")
     assertDataFrameEquals(samRes, bdgRes)
   }

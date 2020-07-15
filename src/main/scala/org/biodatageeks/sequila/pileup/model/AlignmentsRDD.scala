@@ -31,8 +31,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       val aggMap = new mutable.HashMap[String, ContigAggregate]()
       val contigMaxReadLen = new mutable.HashMap[String, Int]()
       val qualityCacheByContig = new QualityCacheByContig()
-      var contigIter  = ""
-      var contigCleanIter  = ""
+      var contigIter, contigCleanIter  = ""
       var contigAggregate: ContigAggregate = null
       var contigQualityCache: QualityCache = null
       MapPartitionTimer.time {
@@ -50,14 +49,11 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
 
           if (!aggMap.contains(contig))
             HandleFirstContingTimer.time {
-              handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap, qualityCacheByContig)
+              handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap)
               contigAggregate = AggMapLookupTimer.time {aggMap(contig) }
-              contigQualityCache = qualityCacheByContig(contig)
+              //contigQualityCache = qualityCacheByContig(contig)
             }
-
-          AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen, contigQualityCache)}
-
-
+          AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen)}
         }
         PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
       }
@@ -92,7 +88,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
         contigEventAgg.startPosition,
         contigEventAgg.startPosition + maxIndex,
         0,
-        cigarMap(contig))
+        cigarMap(contig),
+        contigEventAgg.qualityCache)
       output(i) = agg
       i += 1
     }
@@ -102,8 +99,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
 
   private def handleFirstReadForContigInPartition(read: SAMRecord, contig: String, contigLenMap: Map[String, Int],
                                                   contigMaxReadLen: mutable.HashMap[String, Int],
-                                                  aggMap: mutable.HashMap[String, ContigAggregate],
-                                                  qualityCacheByContig: QualityCacheByContig) = {
+                                                  aggMap: mutable.HashMap[String, ContigAggregate]):Unit = {
     val contigLen = contigLenMap(contig)
     val arrayLen = contigLen - read.getStart + 10
 
@@ -114,13 +110,13 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       alts = new MultiLociAlts(),
       quals = new MultiLociQuals(),
       startPosition = read.getStart,
-      maxPosition = contigLen - 1)
-
+      maxPosition = contigLen - 1,
+      qualityCache = new QualityCache(QualityConstants.CACHE_SIZE))
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0
 
-    val qualityCache = new QualityCache(read.getReadLength*QualityConstants.CACHE_EXPANDER)
-    qualityCacheByContig += contig -> qualityCache
+   // val qualityCache = new QualityCache(read.getReadLength*QualityConstants.CACHE_EXPANDER)
+    //qualityCacheByContig += contig -> qualityCache
 
   }
 

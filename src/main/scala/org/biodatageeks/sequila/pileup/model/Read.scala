@@ -17,16 +17,17 @@ object ReadOperations {
 case class ExtendedReads(r:SAMRecord) {
 
   def analyzeRead(contig: String,
-                  aggregate: ContigAggregate,
-                  contigMaxReadLen: mutable.HashMap[String, Int],
-                  qualityCache: QualityCache): Unit = {
+                  agg: ContigAggregate,
+                  contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
 
-    AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, aggregate, contigMaxReadLen) }
-    val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(aggregate, qualityCache) }
+    val qualityCache = agg.qualityCache
+
+    AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, agg, contigMaxReadLen) }
+    val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(agg, qualityCache) }
     if (Conf.includeBaseQualities) {
       val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
-      fillBaseQualitiesForExistingAlts(aggregate, foundAlts, readQualSummary)
-      addToCache(qualityCache, contigMaxReadLen(contig), readQualSummary)
+      fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary)
+      agg.addToCache(readQualSummary)
     }
   }
 
@@ -133,12 +134,12 @@ case class ExtendedReads(r:SAMRecord) {
         agg.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt)) //fixme get real values from BQString
     }
   }
-  def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {
-    if (maxLen * QualityConstants.CACHE_EXPANDER > qualityCache.length)
-      qualityCache.resize(maxLen*QualityConstants.CACHE_EXPANDER)
-    qualityCache.addOrReplace(readQualSummary)
-
-  }
+//  def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {
+//    if (maxLen * QualityConstants.CACHE_EXPANDER > qualityCache.length)
+//      qualityCache.resize(maxLen*QualityConstants.CACHE_EXPANDER)
+//    qualityCache.addOrReplace(readQualSummary)
+//
+//  }
 
   def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)

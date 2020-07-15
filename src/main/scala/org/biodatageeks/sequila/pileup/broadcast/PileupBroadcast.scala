@@ -1,12 +1,10 @@
 package org.biodatageeks.sequila.pileup.broadcast
 
-import org.apache.spark.util.AccumulatorV2
 import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
 import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
-import org.biodatageeks.sequila.pileup.model.{MultiLociAlts, MultiLociQuals}
+import org.biodatageeks.sequila.pileup.model.{MultiLociAlts, MultiLociQuals, QualityCache}
 import org.biodatageeks.sequila.utils.FastMath
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -17,7 +15,8 @@ case class Tail(
                      events: Array[Short],
                      alts: MultiLociAlts,
                      quals: MultiLociQuals,
-                     cumSum: Short
+                     cumSum: Short,
+                     cache: QualityCache
                    )
 
 
@@ -65,9 +64,11 @@ class PileupUpdate(
 
       val overlaps = range.findOverlappingTails(tails)
       val cumSum = range.precedingCumulativeSum(tails)
+      if(range.contig=="MT" && range.minPos==7831)
+        println()
 
       if(overlaps.isEmpty)
-        correctionsMap += (range.contig, range.minPos) -> Correction(None, None, None, cumSum)
+        correctionsMap += (range.contig, range.minPos) -> Correction(None, None, None, cumSum, null)
       else { // if there are  overlaps for this contigRange
         for(o <- overlaps) {
           val overlapLength = calculateOverlapLength(o, range, it, ranges)
@@ -90,39 +91,8 @@ class PileupUpdate(
       o.startPoint + o.events.length - range.minPos + 1
     length
   }
-
-
 }
 
-class PileupAccumulator(var pilAcc: PileupUpdate)
-  extends AccumulatorV2[PileupUpdate, PileupUpdate] {
-
-  def reset(): Unit = {
-    pilAcc = new PileupUpdate(new ArrayBuffer[Tail](),
-      new ArrayBuffer[Range]())
-  }
-
-  def add(v: PileupUpdate): Unit = {
-    pilAcc.add(v)
-  }
-  def value(): PileupUpdate = {
-    pilAcc
-  }
-  def isZero(): Boolean = {
-    pilAcc.tails.isEmpty && pilAcc.ranges.isEmpty
-  }
-  def copy(): PileupAccumulator = {
-    new PileupAccumulator(pilAcc)
-  }
-  def merge(other: AccumulatorV2[PileupUpdate, PileupUpdate]): Unit = {
-    pilAcc.add(other.value)
-  }
-}
-
-case class UpdateStruct(
-                         upd: mutable.HashMap[(String,Int), (Option[Array[Short]], Option[MultiLociAlts], Option[MultiLociQuals], Short)],
-                         shrink: mutable.HashMap[(String,Int), Int]
-                       )
 
 
 

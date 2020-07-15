@@ -28,4 +28,31 @@ package object model {
     def derivedAltsNumber:Short = map.foldLeft(0)(_+_._2).toShort
   }
 
+  implicit class MultiLociAltsExtension (val map: MultiLociAlts) {
+    def ++ (that: MultiLociAlts): MultiLociAlts = (map ++ that).asInstanceOf[MultiLociAlts]
+    def updateAlts(pos: Int, alt: Char): Unit = {
+      val position = pos // naturally indexed
+      val altByte = alt.toByte
+
+      val altMap = map.getOrElse(position, new SingleLocusAlts())
+      altMap(altByte) = (altMap.getOrElse(altByte, 0.toShort) + 1).toShort
+      map.update(position, altMap)
+    }
+  }
+
+  implicit class MultiLociQualsExtension (val map: MultiLociQuals) {
+    def ++ (that: MultiLociQuals): MultiLociQuals = (map ++ that).asInstanceOf[MultiLociQuals]
+
+    def updateQuals(pos: Int, alt: Char, quality: Short): Unit = {
+      val position = pos // naturally indexed
+      val altByte = alt.toByte
+
+      val qualMap = map.getOrElse(position, new SingleLocusQuals())
+      val array = qualMap.getOrElse(altByte, new ArrayBuffer[Short]())
+      array.append(quality)
+      qualMap.update(altByte,array)
+      map.update(position, qualMap)
+    }
+  }
+
 }

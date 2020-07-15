@@ -26,8 +26,9 @@ class BaseQualityTestSuite extends PileupTestBase {
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
-    result.show(100, truncate = false)
+    //result.show(100, truncate = false)
 //    assert(result.count()==14671)
+    println(result.count())
 
 //    result.where(s"$covEquality=false").show(20)
 
@@ -36,20 +37,21 @@ class BaseQualityTestSuite extends PileupTestBase {
     assert(equals.head.getBoolean(0))
   }
 
-//  test("Simple Quals lookup Multiple partitions") {
-//    spark.sqlContext.setConf(InternalParams.InputSplitSize, splitSize)
-//    val ss = SequilaSession(spark)
-//    SequilaRegister.register(ss)
-//    ss.sparkContext.setLogLevel("ERROR")
-//
-//    val result = ss.sql(pileupQuery)
-//    result.show(100, truncate = false)
-////    assert(result.count()==14671)
-//
-//    //    result.where(s"$covEquality=false").show(20)
-//
-//    val equals = result.select(covEquality).distinct()
-//    assert(equals.count()==1)
-//    assert(equals.head.getBoolean(0))
-//  }
+  test("Simple Quals lookup Multiple partitions") {
+    spark.sqlContext.setConf(InternalParams.InputSplitSize, splitSize)
+    val ss = SequilaSession(spark)
+    SequilaRegister.register(ss)
+    ss.sparkContext.setLogLevel("ERROR")
+
+    val result = ss.sql(pileupQuery)
+    //result.show(100, truncate = false)
+//    assert(result.count()==14671)
+    println(result.count())
+
+//        result.where(s"$covEquality=false").orderBy(s"${Columns.START}").show(20)
+
+    val equals = result.select(covEquality).distinct()
+    assert(equals.count()==1)
+    assert(equals.head.getBoolean(0))
+  }
 }

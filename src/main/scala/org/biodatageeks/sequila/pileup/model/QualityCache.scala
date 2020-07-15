@@ -1,14 +1,20 @@
 package org.biodatageeks.sequila.pileup.model
 
+import org.biodatageeks.sequila.pileup.conf.QualityConstants
+
 import scala.collection.mutable.ArrayBuffer
 
-class QualityCache(size: Int) {
-  var cache = new Array[ReadQualSummary](size)
+class QualityCache(size: Int) extends Serializable {
+  var cache = new Array[ReadQualSummary](QualityConstants.CACHE_EXPANDER*size)
+  val rollingIndexStart = size
   var currentIndex = 0
   var isFull = false
 
+  def this (qualityArray:Array[ReadQualSummary] ) {
+    this(qualityArray.size)
+    this.cache=qualityArray
+  }
   def length: Int = cache.length
-
   def apply(index: Int):ReadQualSummary = cache(index)
 
   def resize (newSize: Int): Unit =  {
@@ -25,11 +31,10 @@ class QualityCache(size: Int) {
     cache = newCache
   }
 
-
   def addOrReplace(readSummary: ReadQualSummary):Unit = {
     cache(currentIndex) = readSummary
     if (currentIndex + 1 >= length) {
-      currentIndex = 0
+      currentIndex = rollingIndexStart
       isFull = true
     }
     else currentIndex = currentIndex + 1
@@ -37,11 +42,33 @@ class QualityCache(size: Int) {
 
   def getReadsOverlappingPosition(position: Long): Array[ReadQualSummary] = {
     val buffer = new ArrayBuffer[ReadQualSummary]()
-    for (rs <- cache)
-      if (rs != null && rs.overlapsPosition(position))
+    for (rs <- cache) {
+      if (rs == null)
+        return buffer.toArray
+      else if (rs.overlapsPosition(position))
         buffer.append(rs)
-
+    }
     buffer.toArray
   }
+
+  def getCacheTailFromPosition(position:Long):QualityCache ={
+    val buffer = new ArrayBuffer[ReadQualSummary]()
+    for (rs <- cache) {
+      if(rs == null)
+        return new QualityCache(buffer.toArray)
+      else if (rs.start >=position)
+        buffer.append(rs)
+    }
+
+    new QualityCache(buffer.toArray)
+  }
+  def ++ (that:QualityCache):QualityCache = {
+    val mergedArray = new Array[ReadQualSummary](length + that.length)
+    System.arraycopy(this.cache, 0, mergedArray, 0, length)
+    System.arraycopy(that.cache, 0, mergedArray, length, that.length)
+    new QualityCache(mergedArray)
+  }
+
+
 }
 

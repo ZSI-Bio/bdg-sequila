@@ -7,7 +7,7 @@ import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
 import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupUpdate, Tail}
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, ShrinkAltsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, CalculateQualsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer, FillQualityForHigherAltsTimer, FillQualityForLowerAltsTimer}
 import org.biodatageeks.sequila.utils.FastMath
 import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.Quals._
@@ -85,7 +85,7 @@ case class ContigAggregate(
 
     val adjustedEvents = CalculateEventsTimer.time { calculateAdjustedEvents(upd) }
     val adjustedAlts = CalculateAltsTimer.time{ calculateAdjustedAlts(upd) }
-    val newQuals = calculateAdjustedQuals(upd)
+    val newQuals = CalculateQualsTimer.time {calculateAdjustedQuals(upd)}
 
     val shrinkedEventsSize = ShrinkArrayTimer.time { calculateShrinkedEventsSize(shrink, adjustedEvents) }
     //val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
@@ -193,8 +193,8 @@ case class ContigAggregate(
 
     val concordantAlts = quals.keySet.intersect(upd.getAlts(contig,startPosition).keySet)
 
-    val qualsInterim = fillQualityForHigherAlts(upd, adjustedQuals, concordantAlts)
-    val completeQuals = fillQualityForLowerAlts(upd, qualsInterim, concordantAlts)
+    val qualsInterim = FillQualityForHigherAltsTimer.time{ fillQualityForHigherAlts(upd, adjustedQuals, concordantAlts)}
+    val completeQuals = FillQualityForLowerAltsTimer.time {fillQualityForLowerAlts(upd, qualsInterim, concordantAlts)}
     completeQuals
   }
 

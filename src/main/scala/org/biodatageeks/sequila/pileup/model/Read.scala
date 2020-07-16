@@ -3,7 +3,7 @@ package org.biodatageeks.sequila.pileup.model
 import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.biodatageeks.sequila.pileup.MDTagParser
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, FillPastQualitiesFromCacheTimer, AnalyzeReadsCalculateQualsFillQualsTimer, AnalyzeReadsCalculateQualsTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
 
 import scala.collection.mutable
 
@@ -26,10 +26,12 @@ case class ExtendedReads(r:SAMRecord) {
 
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, agg, contigMaxReadLen) }
     val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(agg, qualityCache) }
-    if (Conf.includeBaseQualities) {
-      val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
-      fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary)
-      agg.addToCache(readQualSummary)
+    AnalyzeReadsCalculateQualsTimer.time {
+      if (Conf.includeBaseQualities) {
+        val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
+        AnalyzeReadsCalculateQualsFillQualsTimer.time {fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary)}
+        agg.addToCache(readQualSummary)
+      }
     }
   }
 
@@ -118,7 +120,7 @@ case class ExtendedReads(r:SAMRecord) {
         aggregate.updateQuals(altPosition, altBase, altBaseQual)
 
         if (newAlt && Conf.includeBaseQualities)
-          fillPastQualitiesFromCache(aggregate, altPosition, qualityCache)
+          FillPastQualitiesFromCacheTimer.time {fillPastQualitiesFromCache(aggregate, altPosition, qualityCache)}
         altsPositions+=altPosition
       }
       else if(mdtag.base == 'S')

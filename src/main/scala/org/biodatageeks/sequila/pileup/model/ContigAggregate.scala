@@ -6,15 +6,19 @@ import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
 import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
 import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupUpdate, Tail}
 import org.biodatageeks.sequila.pileup.conf.QualityConstants
+import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, ShrinkAltsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer}
 import org.biodatageeks.sequila.utils.FastMath
-import org.biodatageeks.sequila.pileup.model._
+import org.biodatageeks.sequila.pileup.model.Alts._
+import org.biodatageeks.sequila.pileup.model.Quals._
+
 
 import scala.collection.mutable.ArrayBuffer
 
 
 /** Events aggregation on contig
   */
+
 case class ContigAggregate(
                             contig: String = "",
                             contigLen: Int = 0,
@@ -116,7 +120,7 @@ case class ContigAggregate(
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning correction object
       case Some(correction) =>
         correction.alts match {
-          case Some(overlapAlts) => FastMath.mergeNestedMaps(alts, overlapAlts)
+          case Some(overlapAlts) => alts.merge(overlapAlts)
           case None => alts
         }
       case None => alts
@@ -185,7 +189,7 @@ case class ContigAggregate(
     upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
       case Some(correction) =>
         correction.quals match {
-          case Some(overlapQuals) => FastMath.mergeQualMaps(quals, overlapQuals)
+          case Some(overlapQuals) => quals.merge(overlapQuals)
           case None => quals
         }
       case None => quals

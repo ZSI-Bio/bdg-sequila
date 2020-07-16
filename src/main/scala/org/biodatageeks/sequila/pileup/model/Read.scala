@@ -16,6 +16,9 @@ object ReadOperations {
 
 case class ExtendedReads(r:SAMRecord) {
 
+  private def getAltBaseFromSequence(position: Int):Char = this.r.getReadString.charAt(position-1)
+  private def getAltBaseQualFromSequence(position: Int):Short = this.r.getBaseQualityString.charAt(position-1).toShort
+
   def analyzeRead(contig: String,
                   agg: ContigAggregate,
                   contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
@@ -82,7 +85,6 @@ case class ExtendedReads(r:SAMRecord) {
       if (cigarOp == CigarOperator.INSERTION) {
         numInsertions += cigarOpLength
       }
-
       position = position+cigarOpLength
     }
     mdPosition + numInsertions
@@ -126,6 +128,11 @@ case class ExtendedReads(r:SAMRecord) {
     altsPositions
   }
 
+  private def updateMaxCigarInContig(cigarLen:Int, contig: String, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
+    if (cigarLen > contigMaxReadLen(contig))
+      contigMaxReadLen(contig) = cigarLen
+  }
+
   def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:scala.collection.Set[Long], readQualSummary: ReadQualSummary): Unit = {
     val altsPositions = agg.getAltPositionsForRange(r.getStart, r.getEnd)
     val updatePositions = altsPositions diff blackList
@@ -134,12 +141,6 @@ case class ExtendedReads(r:SAMRecord) {
         agg.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt)) //fixme get real values from BQString
     }
   }
-//  def addToCache(qualityCache: QualityCache, maxLen: Int, readQualSummary: ReadQualSummary):Unit = {
-//    if (maxLen * QualityConstants.CACHE_EXPANDER > qualityCache.length)
-//      qualityCache.resize(maxLen*QualityConstants.CACHE_EXPANDER)
-//    qualityCache.addOrReplace(readQualSummary)
-//
-//  }
 
   def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)
@@ -149,14 +150,5 @@ case class ExtendedReads(r:SAMRecord) {
     }
   }
 
-
-  private def getAltBaseFromSequence(position: Int):Char = this.r.getReadString.charAt(position-1)
-
-  private def getAltBaseQualFromSequence(position: Int):Short = this.r.getBaseQualityString.charAt(position-1).toShort
-
-  private def updateMaxCigarInContig(cigarLen:Int, contig: String, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
-    if (cigarLen > contigMaxReadLen(contig))
-      contigMaxReadLen(contig) = cigarLen
-  }
 
 }

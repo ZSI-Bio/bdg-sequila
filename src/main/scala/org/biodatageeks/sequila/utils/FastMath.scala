@@ -1,9 +1,6 @@
 package org.biodatageeks.sequila.utils
 
-import org.biodatageeks.sequila.pileup.model.{MultiLociAlts, MultiLociQuals, SingleLocusAlts, SingleLocusQuals}
-
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object FastMath {
 
@@ -34,55 +31,13 @@ object FastMath {
     -1
   }
 
-  def mergeMaps(map1: SingleLocusAlts, map2: SingleLocusAlts): SingleLocusAlts = {
-    if (map1 == null)
-      return map2
-    if (map2 == null)
-      return map1
-    if(map1.keySet.intersect(map2.keySet).isEmpty) return map1 ++ map2
-    val keyset = map1.keySet++map2.keySet
-    val mergedMap = new SingleLocusAlts()
-    for (k <- keyset)
-      mergedMap(k) = (map1.getOrElse(k, 0.toShort) + map2.getOrElse(k, 0.toShort)).toShort
-    mergedMap
-  }
-
-  def mergeNestedMaps(map1: MultiLociAlts, map2: MultiLociAlts): MultiLociAlts = {
+  def merge [A,B](map1: mutable.Map[A,B], map2:mutable.Map[A,B] ): Option[mutable.Map[A,B]] ={
     if (map1 == null || map1.isEmpty)
-      return map2
+      return Option(map2)
     if (map2 == null || map2.isEmpty)
-      return map1
-    if(map1.keySet.intersect(map2.keySet).isEmpty) return map1 ++ map2
-    val keyset = map1.keySet++map2.keySet
-    var mergedAltsMap = new MultiLociAlts()
-    for (k <- keyset)
-      mergedAltsMap += k -> mergeMaps(map1.getOrElse(k,null), map2.getOrElse(k,null)) // to refactor
-    mergedAltsMap
+      return Option(map1)
+    if(map1.keySet.intersect(map2.keySet).isEmpty)
+      return Option(map1 ++ map2)
+    None
   }
-
-  def mergeQualMaps(map1: MultiLociQuals, map2: MultiLociQuals): MultiLociQuals = {
-    if (map1 == null || map1.isEmpty)
-      return map2
-    if (map2 == null || map2.isEmpty)
-      return map1
-    if(map1.keySet.intersect(map2.keySet).isEmpty) return map1 ++ map2
-    val keyset = map1.keySet++map2.keySet
-    var mergedQualsMap = new MultiLociQuals()
-    for (k <- keyset)
-      mergedQualsMap += k -> mergeSingleQualsMaps(map1.getOrElse(k,null), map2.getOrElse(k,null)) // to refactor
-    mergedQualsMap
-  }
-  def mergeSingleQualsMaps(map1: SingleLocusQuals, map2: SingleLocusQuals): SingleLocusQuals = {
-    if (map1 == null)
-      return map2
-    if (map2 == null)
-      return map1
-    if(map1.keySet.intersect(map2.keySet).isEmpty) return map1 ++ map2
-    val keyset = map1.keySet++map2.keySet
-    val mergedMap = new SingleLocusQuals()
-    for (k <- keyset)
-      mergedMap(k) = map1.getOrElse(k, ArrayBuffer.empty[Short])++(map2.getOrElse(k, ArrayBuffer.empty[Short]))
-    mergedMap
-  }
-
 }

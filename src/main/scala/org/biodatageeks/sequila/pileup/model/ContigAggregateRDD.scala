@@ -9,6 +9,8 @@ import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
 import org.biodatageeks.sequila.pileup.model._
+import org.biodatageeks.sequila.pileup.model.Alts._
+import org.biodatageeks.sequila.pileup.model.Quals._
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -113,8 +115,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
     if (Conf.includeBaseQualities) {
       val qualsMap = agg.quals(posStart)
       //assert(qualsMap.derivedCoverage == cov.toShort)
-
-      agg.quals(posStart).map {
+      qualsMap.map {
         case (k, v) =>
           if (k != QualityConstants.REF_SYMBOL)
             (k, v.toArray[Short])

@@ -24,7 +24,7 @@ class PileupTestSuite extends PileupTestBase {
 
     val result = ss.sql(pileupQuery)
 //    result.show(100, truncate = false)
-    Writer.saveToFile(ss, result, "bdgNorm.csv")
+//    Writer.saveToFile(ss, result, "bdgNorm.csv")
     result.where(s"${Columns.CONTIG}='MT' and ${Columns.START} >= 7").show(20)
     performAssertions(result)
   }
@@ -34,7 +34,7 @@ class PileupTestSuite extends PileupTestBase {
     val ss = SequilaSession(spark)
     SequilaRegister.register(ss)
     val result = ss.sql(pileupQuery)
-    Writer.saveToFile(ss, result, "bdgSplit.csv")
+//    Writer.saveToFile(ss, result, "bdgSplit.csv")
     result.where(s"${Columns.CONTIG}='MT' and ${Columns.START} >= 7 and ${Columns.START} <= 50").show(20)
     performAssertions(result)
 

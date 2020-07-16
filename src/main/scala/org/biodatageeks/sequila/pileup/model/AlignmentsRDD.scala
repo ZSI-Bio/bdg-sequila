@@ -1,12 +1,10 @@
 package org.biodatageeks.sequila.pileup.model
 
 import java.util
-
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer, AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
 import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
-
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
@@ -30,10 +28,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     this.rdd.mapPartitions { partition =>
       val aggMap = new mutable.HashMap[String, ContigAggregate]()
       val contigMaxReadLen = new mutable.HashMap[String, Int]()
-      val qualityCacheByContig = new QualityCacheByContig()
       var contigIter, contigCleanIter  = ""
       var contigAggregate: ContigAggregate = null
-      var contigQualityCache: QualityCache = null
       MapPartitionTimer.time {
         while (partition.hasNext) {
           val read = BAMReadTimer.time {partition.next()}
@@ -51,7 +47,6 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
             HandleFirstContingTimer.time {
               handleFirstReadForContigInPartition(read, contig, contigLenMap, contigMaxReadLen, aggMap)
               contigAggregate = AggMapLookupTimer.time {aggMap(contig) }
-              //contigQualityCache = qualityCacheByContig(contig)
             }
           AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen)}
         }
@@ -114,10 +109,6 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       qualityCache = new QualityCache(QualityConstants.CACHE_SIZE))
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0
-
-   // val qualityCache = new QualityCache(read.getReadLength*QualityConstants.CACHE_EXPANDER)
-    //qualityCacheByContig += contig -> qualityCache
-
   }
 
   /**
@@ -137,6 +128,5 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     }
     contigLenMap.toMap
   }
-
 
 }

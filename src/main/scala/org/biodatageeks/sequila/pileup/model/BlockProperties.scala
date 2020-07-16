@@ -1,6 +1,8 @@
 package org.biodatageeks.sequila.pileup.model
 
-import scala.collection.mutable
+import org.biodatageeks.sequila.pileup.model.Alts.SingleLocusAlts
+import org.biodatageeks.sequila.pileup.model.Quals.SingleLocusQuals
+
 
 class BlockProperties {
   var cov, len, pos = 0

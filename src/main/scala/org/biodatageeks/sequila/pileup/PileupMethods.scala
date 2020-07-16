@@ -40,7 +40,7 @@ object PileupMethods {
     val accumulator = AccumulatorTimer.time {aggregates.accumulateTails(spark)}
 
     val broadcast = BroadcastTimer.time{
-      spark.sparkContext.broadcast(accumulator.value().prepareOverlaps())
+      spark.sparkContext.broadcast(accumulator.value().prepareCorrectionsForOverlaps())
     }
     val adjustedEvents = AdjustedEventsTimer.time {aggregates.adjustWithOverlaps(broadcast) }
     val pileup = EventsToPileupTimer.time {adjustedEvents.toPileup}

@@ -1,9 +1,11 @@
 package org.biodatageeks.sequila.pileup.broadcast
 
-import org.biodatageeks.sequila.pileup.conf.QualityConstants
-import org.biodatageeks.sequila.pileup.model.{MultiLociAlts, MultiLociAltsExtension, MultiLociQuals, MultiLociQualsExtension, QualityCache}
+import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
+import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
+import org.biodatageeks.sequila.pileup.model.Alts._
+import org.biodatageeks.sequila.pileup.model.QualityCache
 import org.biodatageeks.sequila.utils.FastMath
-import org.biodatageeks.sequila.pileup.model._
+import org.biodatageeks.sequila.pileup.model.Quals._
 
 import scala.collection.mutable
 
@@ -74,8 +76,8 @@ object Correction {
           map += (range.contig, range.minPos) -> newCorrection
         }
       }
-
     }
   }
 }
 
+case class FullCorrections (corrections: PartitionCorrections, shrinks:PartitionShrinks)

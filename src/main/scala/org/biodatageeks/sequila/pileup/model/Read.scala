@@ -6,7 +6,6 @@ import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object ReadOperations {
   object implicits {
@@ -149,6 +148,4 @@ case class ExtendedReads(r:SAMRecord) {
       agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, qual )
     }
   }
-
-
 }

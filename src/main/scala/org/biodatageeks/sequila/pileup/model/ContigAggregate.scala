@@ -5,13 +5,12 @@ import org.biodatageeks.sequila.pileup.broadcast
 import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
 import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
 import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupUpdate, Tail}
-import org.biodatageeks.sequila.pileup.conf.QualityConstants
+import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, ShrinkAltsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer}
 import org.biodatageeks.sequila.utils.FastMath
 import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.Quals._
-
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -73,15 +72,20 @@ case class ContigAggregate(
     tail
   }
 
+  def calculateAdjustedQuals(upd: PartitionCorrections): MultiLociQuals = {
+    if (Conf.includeBaseQualities) {
+      calculateCompleteQuals(upd)
+    } else
+      new MultiLociQuals()
+  }
+
   def getAdjustedAggregate(b:Broadcast[FullCorrections]): ContigAggregate = {
     val upd: PartitionCorrections = b.value.corrections
     val shrink:PartitionShrinks = b.value.shrinks
 
     val adjustedEvents = CalculateEventsTimer.time { calculateAdjustedEvents(upd) }
     val adjustedAlts = CalculateAltsTimer.time{ calculateAdjustedAlts(upd) }
-    val adjustedQuals = calculateAdjustedQuals(upd)
-
-    val newQuals = calculateCompleteQuals(upd,adjustedQuals)
+    val newQuals = calculateAdjustedQuals(upd)
 
     val shrinkedEventsSize = ShrinkArrayTimer.time { calculateShrinkedEventsSize(shrink, adjustedEvents) }
     //val shrinkedAltsMap = ShrinkAltsTimer.time { calculateShrinkedAlts(shrink, adjustedAlts) }
@@ -176,7 +180,17 @@ case class ContigAggregate(
     }
   }
 
-  private def calculateCompleteQuals(upd:PartitionCorrections, adjustedQuals:MultiLociQuals): MultiLociQuals ={
+  private def calculateCompleteQuals(upd:PartitionCorrections): MultiLociQuals ={
+
+    val adjustedQuals = upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
+      case Some(correction) =>
+        correction.quals match {
+          case Some(overlapQuals) => quals.merge(overlapQuals)
+          case None => quals
+        }
+      case None => quals
+    }
+
     val concordantAlts = quals.keySet.intersect(upd.getAlts(contig,startPosition).keySet)
 
     val qualsInterim = fillQualityForHigherAlts(upd, adjustedQuals, concordantAlts)
@@ -185,16 +199,16 @@ case class ContigAggregate(
   }
 
 
-  private def calculateAdjustedQuals(upd:PartitionCorrections): MultiLociQuals = {
-    upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
-      case Some(correction) =>
-        correction.quals match {
-          case Some(overlapQuals) => quals.merge(overlapQuals)
-          case None => quals
-        }
-      case None => quals
-    }
-  }
+//  private def calculateAdjustedQualsInternal(upd:PartitionCorrections): MultiLociQuals = {
+//    upd.get((contig, startPosition)) match { // check if there is a value for contigName and minPos in upd, returning array of coverage and cumSum to update current contigRange
+//      case Some(correction) =>
+//        correction.quals match {
+//          case Some(overlapQuals) => quals.merge(overlapQuals)
+//          case None => quals
+//        }
+//      case None => quals
+//    }
+//  }
 
   private def calculateShrinkedEventsSize[T](shrink: PartitionShrinks, updArray: Array[T]): Int = {
     shrink.get((contig, startPosition)) match {

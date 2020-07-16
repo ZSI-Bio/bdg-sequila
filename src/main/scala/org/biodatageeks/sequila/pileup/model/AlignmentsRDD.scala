@@ -1,13 +1,17 @@
 package org.biodatageeks.sequila.pileup.model
 
 import java.util
+
 import htsjdk.samtools.SAMRecord
 import org.apache.spark.rdd.RDD
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AggMapLookupTimer, AnalyzeReadsTimer, BAMReadTimer, DQTimerTimer, HandleFirstContingTimer, InitContigLengthsTimer, MapPartitionTimer, PrepareOutupTimer}
 import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
+
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
+import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
+import org.biodatageeks.sequila.pileup.model.Quals.MultiLociQuals
 
 object AlignmentsRDDOperations {
   object implicits {

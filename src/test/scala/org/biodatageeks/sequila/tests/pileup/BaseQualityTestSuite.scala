@@ -30,7 +30,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     assert(result.count()==14671)
     println(result.count())
 
-//    result.where(s"$covEquality=false").show(20)
+    result.where(s"$covEquality=false").show(20)
 
     val equals = result.select(covEquality).distinct()
     assert(equals.count()==1)

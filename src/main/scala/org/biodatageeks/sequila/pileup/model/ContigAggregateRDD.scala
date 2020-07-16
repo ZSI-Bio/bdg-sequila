@@ -10,6 +10,7 @@ import org.biodatageeks.sequila.pileup.serializers.PileupProjection
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AccumulatorAddTimer, AccumulatorAllocTimer, AccumulatorNestedTimer, AccumulatorRegisterTimer, PileupUpdateCreationTimer}
 import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.Quals._
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -20,6 +21,8 @@ object AggregateRDDOperations {
 }
 
 case class AggregateRDD(rdd: RDD[ContigAggregate]) {
+  val logger: Logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
+
   /**
     * gathers "tails" of events array that might be overlapping with other partitions. length of tail is equal to the
     * longest read in this aggregate
@@ -50,6 +53,8 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
       PileupProjection.setContigMap(contigMap)
 
       part.map { agg => {
+        println(s"Generating pileup records for ${agg.contig} ${agg.startPosition}")
+
         var cov, ind, i = 0
         val allPos = false
         val maxLen = agg.calculateMaxLength(allPos)

@@ -140,8 +140,11 @@ case class ContigAggregate(
             val qualStart = startPosition
             val qualEnd = startPosition+ overlapArray.length
             val qualsSet = alts.keySet.filter(pos=> pos >= qualStart && pos < qualEnd).diff(blacklist)
+
             for (pos <- qualsSet) {
-              val reads = correction.qualityCache.getReadsOverlappingPosition(pos)
+              if(contig=="1" && pos==7984)
+                println
+              val reads = correction.qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)
                 adjustedQuals.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual)
@@ -166,7 +169,9 @@ case class ContigAggregate(
             // fill BQ for alts in old Partition with cache from aggregate cache
             val qualsSet = alts.keySet.diff(blacklist)
             for (pos <- qualsSet) {
-              val reads = qualityCache.getReadsOverlappingPosition(pos)
+              if(contig=="1" && pos==7984)
+                println
+              val reads = qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)
                 qualsInterim.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual)

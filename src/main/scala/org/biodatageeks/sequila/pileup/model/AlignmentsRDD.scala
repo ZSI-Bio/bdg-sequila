@@ -9,6 +9,7 @@ import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
 
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
+import org.slf4j.{Logger, LoggerFactory}
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
 import org.biodatageeks.sequila.pileup.model.Quals.MultiLociQuals
@@ -20,6 +21,8 @@ object AlignmentsRDDOperations {
 }
 
 case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
+  val logger: Logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
+
   /**
     * Collects "interesting" (read start, stop, ref/nonref counting) events on alignments
     *
@@ -30,6 +33,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       initContigLengths(this.rdd.first())
     }
     this.rdd.mapPartitions { partition =>
+      println(s"Creating aggregates from alignments")
+
       val aggMap = new mutable.HashMap[String, ContigAggregate]()
       val contigMaxReadLen = new mutable.HashMap[String, Int]()
       var contigIter, contigCleanIter  = ""
@@ -69,6 +74,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     * @return
     */
   def prepareOutputAggregates(aggMap: mutable.HashMap[String, ContigAggregate], cigarMap: mutable.HashMap[String, Int]): Array[ContigAggregate] = {
+    println(s"Preparing output aggregates")
     val output = new Array[ContigAggregate](aggMap.size)
     var i = 0
     val iter = aggMap.toIterator

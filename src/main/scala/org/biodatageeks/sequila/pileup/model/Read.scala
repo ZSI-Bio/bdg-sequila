@@ -21,18 +21,30 @@ case class ExtendedReads(r:SAMRecord) {
   def analyzeRead(contig: String,
                   agg: ContigAggregate,
                   contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
-
+    val time1 = System.nanoTime()
     val qualityCache = agg.qualityCache
+    var time2,time3,time4,time5:Long=0
 
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, agg, contigMaxReadLen) }
     val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(agg, qualityCache) }
     AnalyzeReadsCalculateQualsTimer.time {
       if (Conf.includeBaseQualities) {
+        time2 = System.nanoTime()
         val readQualSummary = ReadQualSummary(r.getStart, r.getEnd, r.getBaseQualityString, r.getCigar)
+        time3 = System.nanoTime()
         AnalyzeReadsCalculateQualsFillQualsTimer.time {fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary)}
+        time4 = System.nanoTime()
         agg.addToCache(readQualSummary)
+        time5 = System.nanoTime()
       }
     }
+//    val time6 = System.nanoTime()
+//    println(s"READ ${time6-time1}")
+//    println(s"\t RS ${time3-time2}")
+//    println(s"\t FILL ${time4-time3}")
+//    println(s"\t CACHE+ ${time5-time4}")
+
+
   }
 
   def calculateEvents(contig: String, aggregate: ContigAggregate, contigMaxReadLen: mutable.HashMap[String, Int]): Unit = {
@@ -144,10 +156,15 @@ case class ExtendedReads(r:SAMRecord) {
   }
 
   def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
+    val time1 = System.nanoTime()
+    if(agg.contig=="1" && altPosition==7984)
+      println
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)
     for (read <- reads) {
       val qual = read.getBaseQualityForPosition(altPosition)
       agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, qual )
     }
+    val time2 = System.nanoTime()
+//    println(s"\t\t REFILL ${time2-time1}")
   }
 }

@@ -41,23 +41,38 @@ object PileupApp extends App{
     val query =
       s"""
          |SELECT count(*)
+         |FROM  pileup('$tableNameBAM', 'NA12878', '${referencePath}')
+       """.stripMargin
+
+    val queryQual =
+      s"""
+         |SELECT count(*)
          |FROM  pileup('$tableNameBAM', 'NA12878', '${referencePath}', true)
        """.stripMargin
-    ss
-      .sqlContext
-      .setConf(InternalParams.EnableInstrumentation, "true")
+//    ss
+//      .sqlContext
+//      .setConf(InternalParams.EnableInstrumentation, "true")
     Metrics.initialize(ss.sparkContext)
     val metricsListener = new MetricsListener(new RecordedMetrics())
     ss
       .sparkContext
       .addSparkListener(metricsListener)
-    val results = ss.sql(query)
+//    val results = ss.sql(query)
+//    ss.time{
+//      results.show()
+//    }
+//    val writer = new PrintWriter(new OutputStreamWriter(System.out, "UTF-8"))
+//    Metrics.print(writer, Some(metricsListener.metrics.sparkMetrics.stageTimes))
+//    writer.close()
+
+    val resultsQual = ss.sql(queryQual)
     ss.time{
-      results.show()
+      resultsQual.show()
     }
-    val writer = new PrintWriter(new OutputStreamWriter(System.out, "UTF-8"))
-    Metrics.print(writer, Some(metricsListener.metrics.sparkMetrics.stageTimes))
-    writer.close()
+    val writerQual = new PrintWriter(new OutputStreamWriter(System.out, "UTF-8"))
+    Metrics.print(writerQual, Some(metricsListener.metrics.sparkMetrics.stageTimes))
+    writerQual.close()
+
     ss.stop()
   }
 }

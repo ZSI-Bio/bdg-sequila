@@ -8,6 +8,7 @@ object Alts {
   type SingleLocusAlts = mutable.HashMap[Byte,Short]
   val SingleLocusAlts = mutable.HashMap[Byte,Short] _
 
+
   type MultiLociAlts= mutable.LongMap[Alts.SingleLocusAlts]
   val MultiLociAlts = mutable.LongMap[Alts.SingleLocusAlts] _
 

@@ -33,12 +33,10 @@ object Quals {
   implicit class MultiLociQualsExtension (val map: Quals.MultiLociQuals) {
     def ++ (that: Quals.MultiLociQuals): Quals.MultiLociQuals = (map ++ that).asInstanceOf[Quals.MultiLociQuals]
 
-    def updateQuals(pos: Int, alt: Char, quality: Short): Unit = {
-
-      val position = pos // naturally indexed
+    def updateQuals(position: Int, alt: Char, quality: Short): Unit = {
       val altByte = alt.toByte
 
-      val qualMap = map.getOrElse(position, new Quals.SingleLocusQuals())
+      val qualMap = map.getOrElse(position, new SingleLocusQuals())
       val array = qualMap.getOrElse(altByte, new ArrayBuffer[Short]())
       array.append(quality)
       qualMap.update(altByte,array)

@@ -35,7 +35,7 @@ case class ContigAggregate(
   def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
   def getAltPositionsForRange(start: Int, end: Int): Array[Long] = {
-    alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE).filter(pos => pos >= start && pos <= end)
+    alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE/2).filter(pos => pos >= start && pos <= end)
     //alts.getPositionsForRange(start:Int, end: Int)
 //    alts.keySet.toIndexedSeq.takeRight(QualityConstants.CACHE_SIZE).filter(pos => pos >= start && pos <= end)
 //     val set = alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE)

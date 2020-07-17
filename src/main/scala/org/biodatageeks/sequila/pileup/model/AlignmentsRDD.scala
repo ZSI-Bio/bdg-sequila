@@ -118,6 +118,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       startPosition = read.getStart,
       maxPosition = contigLen - 1,
       qualityCache = new QualityCache(QualityConstants.CACHE_SIZE))
+
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0
   }

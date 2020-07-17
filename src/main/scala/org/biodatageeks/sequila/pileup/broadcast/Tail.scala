@@ -1,8 +1,9 @@
 package org.biodatageeks.sequila.pileup.broadcast
 
-import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
+import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.QualityCache
-import org.biodatageeks.sequila.pileup.model.Quals.MultiLociQuals
+import org.biodatageeks.sequila.pileup.model.Quals._
+
 
 case class Tail(
                  contig: String,

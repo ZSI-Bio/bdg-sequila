@@ -4,7 +4,9 @@ import htsjdk.samtools.{Cigar, CigarOperator}
 
 case class ReadQualSummary (start: Int, end: Int, qualString: String, cigar: Cigar) {
 
-  def getBaseQualityForPosition(position: Int): Short = qualString.charAt(relativePosition(position)).toShort
+  def getBaseQualityForPosition(position: Int): Short = {
+    qualString.charAt(relativePosition(position)).toShort
+  }
 
   def overlapsPosition(pos:Long):Boolean = isPositionInRange(pos) && !hasDeletionOnPosition(pos)
 

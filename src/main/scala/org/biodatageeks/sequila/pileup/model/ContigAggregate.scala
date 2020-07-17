@@ -34,9 +34,21 @@ case class ContigAggregate(
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
-  def getAltPositionsForRange(start: Int, end: Int): scala.collection.Set[Long] = {
-    alts.keySet.filter(pos => pos >= start && pos <= end)
+  def getAltPositionsForRange(start: Int, end: Int): Array[Long] = {
+    alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE).filter(pos => pos >= start && pos <= end)
+    //alts.getPositionsForRange(start:Int, end: Int)
+//    alts.keySet.toIndexedSeq.takeRight(QualityConstants.CACHE_SIZE).filter(pos => pos >= start && pos <= end)
+//     val set = alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE)
+//    var list = List.empty[Long]
+//    for (pos <- set) {
+//      if (pos >= start && pos <= end)
+//        list = list :+ pos
+//    }
+//    list
+
+
   }
+
 
   def addToCache(readQualSummary: ReadQualSummary):Unit = qualityCache.addOrReplace(readQualSummary)
 
@@ -142,8 +154,6 @@ case class ContigAggregate(
             val qualsSet = alts.keySet.filter(pos=> pos >= qualStart && pos < qualEnd).diff(blacklist)
 
             for (pos <- qualsSet) {
-              if(contig=="1" && pos==7984)
-                println
               val reads = correction.qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)
@@ -169,8 +179,6 @@ case class ContigAggregate(
             // fill BQ for alts in old Partition with cache from aggregate cache
             val qualsSet = alts.keySet.diff(blacklist)
             for (pos <- qualsSet) {
-              if(contig=="1" && pos==7984)
-                println
               val reads = qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)

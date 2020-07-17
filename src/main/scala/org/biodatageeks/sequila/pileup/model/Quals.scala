@@ -1,6 +1,8 @@
 package org.biodatageeks.sequila.pileup.model
 
+import org.biodatageeks.sequila.pileup.conf.QualityConstants
 import org.biodatageeks.sequila.utils.FastMath
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,6 +34,7 @@ object Quals {
     def ++ (that: Quals.MultiLociQuals): Quals.MultiLociQuals = (map ++ that).asInstanceOf[Quals.MultiLociQuals]
 
     def updateQuals(pos: Int, alt: Char, quality: Short): Unit = {
+
       val position = pos // naturally indexed
       val altByte = alt.toByte
 

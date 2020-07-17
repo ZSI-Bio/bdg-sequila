@@ -28,9 +28,6 @@ class PileupConverter (spark: SparkSession) {
       val buffer = new StringBuilder()
       var i = 0
 
-      if (contig=="1" && position == 6272)
-        println()
-
 //      while (i < splitted.length) {
 //        if (i == 0 && splitted(i).nonEmpty)
 //          buffer.append(splitted(i))

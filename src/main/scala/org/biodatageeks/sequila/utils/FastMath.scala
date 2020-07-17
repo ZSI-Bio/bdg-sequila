@@ -3,6 +3,26 @@ package org.biodatageeks.sequila.utils
 import scala.collection.mutable
 
 object FastMath {
+  def getSubArrayForRange(input: Array[Long], start: Int, end: Int):Array[Long] = {
+    val sortedArray = input.sorted
+    val output = new Array[Long](input.size)
+    var currPosition = input.size-1
+    var outputPos = 0
+
+    while(currPosition >=0){
+      val item = sortedArray(currPosition)
+      if (item >= start && item <= end) {
+        output(outputPos) = item
+        outputPos += 1
+      }
+      currPosition -=1
+
+      if (item < start)
+        return output.take(outputPos)
+    }
+    output.take(outputPos)
+
+  }
 
   def sumShort(a: Array[Short]) = {
     var i = 0
@@ -40,4 +60,6 @@ object FastMath {
       return Option(map1 ++ map2)
     None
   }
+
+
 }

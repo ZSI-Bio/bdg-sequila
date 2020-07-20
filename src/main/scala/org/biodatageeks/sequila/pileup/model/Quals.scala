@@ -13,7 +13,14 @@ object Quals {
   val MultiLociQuals = mutable.LongMap[Quals.SingleLocusQuals] _
 
   implicit class SingleLocusQualsExtension(val map: Quals.SingleLocusQuals) {
-    def derivedCoverage:Short = map.foldLeft(0)(_+_._2.length).toShort
+    def derivedCoverage:Short = {
+      var sum =0
+      map.foreach({case (k,v) =>
+        for (index <- 0 until v.length-1 by 2)
+          sum += v(index+1)
+      })
+      sum.toShort
+    }
 
     def getTotalEntries:Long = map.foldLeft(0)(_ + _._2.length).toLong
 

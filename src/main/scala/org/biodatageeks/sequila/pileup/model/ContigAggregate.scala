@@ -1,5 +1,7 @@
 package org.biodatageeks.sequila.pileup.model
 
+import java.util
+
 import org.apache.spark.broadcast.Broadcast
 import org.biodatageeks.sequila.pileup.broadcast
 import org.biodatageeks.sequila.pileup.broadcast.Correction.PartitionCorrections
@@ -7,7 +9,7 @@ import org.biodatageeks.sequila.pileup.broadcast.Shrink.PartitionShrinks
 import org.biodatageeks.sequila.pileup.broadcast.{FullCorrections, PileupUpdate, Tail}
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
-import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, CalculateQualsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer, FillQualityForHigherAltsTimer, FillQualityForLowerAltsTimer}
+import org.biodatageeks.sequila.pileup.timers.PileupTimers.{CalculateAltsTimer, CalculateEventsTimer, CalculateQualsTimer, FillQualityForHigherAltsTimer, FillQualityForLowerAltsTimer, ShrinkArrayTimer, TailAltsTimer, TailCovTimer, TailEdgeTimer}
 import org.biodatageeks.sequila.utils.FastMath
 import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.Quals._
@@ -31,22 +33,17 @@ case class ContigAggregate(
                             qualityCache: QualityCache
                                 ) {
 
+  private val altsKeyCache  = new Array[Long](QualityConstants.CACHE_SIZE/2)
+  private var altsKeyCacheInd = 0
+  private var altsKeyCacheMin = Int.MaxValue
+  private var altsKeyCacheMax = Int.MinValue
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
   def getAltPositionsForRange(start: Int, end: Int): Array[Long] = {
-    alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE/2).filter(pos => pos >= start && pos <= end)
-    //alts.getPositionsForRange(start:Int, end: Int)
-//    alts.keySet.toIndexedSeq.takeRight(QualityConstants.CACHE_SIZE).filter(pos => pos >= start && pos <= end)
-//     val set = alts.keySet.toArray[Long].takeRight(QualityConstants.CACHE_SIZE)
-//    var list = List.empty[Long]
-//    for (pos <- set) {
-//      if (pos >= start && pos <= end)
-//        list = list :+ pos
-//    }
-//    list
-
-
+    if (end >= altsKeyCacheMin && start <= altsKeyCacheMax)
+      altsKeyCache.filter(pos => pos >= start && pos <= end)
+    else Array.emptyLongArray
   }
 
 
@@ -66,7 +63,20 @@ case class ContigAggregate(
     events(position) = (events(position) + delta).toShort
   }
 
-  def updateAlts(pos: Int, alt: Char): Unit = alts.updateAlts(pos, alt)
+  def updateAlts(pos: Int, alt: Char): Unit = {
+    val shouldUpdateCache =  Conf.includeBaseQualities && ! alts.contains(pos)
+    alts.updateAlts(pos, alt)
+    if(shouldUpdateCache) {
+      if(altsKeyCacheInd == QualityConstants.CACHE_SIZE/2 - 1)
+        altsKeyCacheInd = 0
+      altsKeyCache(altsKeyCacheInd) = pos
+      altsKeyCacheInd += 1
+      if(pos > altsKeyCacheMax)
+        altsKeyCacheMax = pos
+      if(pos < altsKeyCacheMin)
+        altsKeyCacheMin = pos
+    }
+  }
 
   def updateQuals(pos: Int, alt: Char, quality: Short): Unit = quals.updateQuals(pos, alt,quality)
 
@@ -78,7 +88,7 @@ case class ContigAggregate(
         events.takeRight(maxSeqLen)
     }
     val tailAlts = TailAltsTimer.time {alts.filter(_._1 >= tailStartIndex)}
-    val tailQuals = quals.filter(_._1 >= tailStartIndex)
+    val tailQuals = if (Conf.includeBaseQualities) quals.filter(_._1 >= tailStartIndex) else null
     val cumSum = FastMath.sumShort(events)
     val tail = TailEdgeTimer.time {broadcast.Tail(contig, startPosition, tailStartIndex, tailCov, tailAlts, tailQuals,cumSum, qualityCache)}
     tail

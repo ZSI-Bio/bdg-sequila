@@ -9,8 +9,8 @@ object Alts {
   val SingleLocusAlts = mutable.HashMap[Byte,Short] _
 
 
-  type MultiLociAlts= mutable.LinkedHashMap [Long, SingleLocusAlts]
-  val MultiLociAlts = mutable.LinkedHashMap[Long, SingleLocusAlts] _
+  type MultiLociAlts= mutable.LongMap [SingleLocusAlts]
+  val MultiLociAlts = mutable.LongMap [SingleLocusAlts] _
 
   implicit class SingleLocusAltsExtension(val map: Alts.SingleLocusAlts) {
     def derivedAltsNumber:Short = map.foldLeft(0)(_+_._2).toShort

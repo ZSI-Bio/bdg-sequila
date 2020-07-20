@@ -53,7 +53,7 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
       PileupProjection.setContigMap(contigMap)
 
       part.map { agg => {
-        println(s"Generating pileup records for ${agg.contig} ${agg.startPosition}")
+//        println(s"Generating pileup records for ${agg.contig} ${agg.startPosition}")
 
         var cov, ind, i = 0
         val allPos = false

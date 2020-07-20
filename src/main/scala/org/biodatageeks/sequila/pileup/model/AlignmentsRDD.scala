@@ -33,7 +33,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       initContigLengths(this.rdd.first())
     }
     this.rdd.mapPartitions { partition =>
-      println(s"Creating aggregates from alignments")
+//      println(s"Creating aggregates from alignments")
 
       val aggMap = new mutable.HashMap[String, ContigAggregate]()
       val contigMaxReadLen = new mutable.HashMap[String, Int]()
@@ -74,7 +74,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
     * @return
     */
   def prepareOutputAggregates(aggMap: mutable.HashMap[String, ContigAggregate], cigarMap: mutable.HashMap[String, Int]): Array[ContigAggregate] = {
-    println(s"Preparing output aggregates")
+    //println(s"Preparing output aggregates")
     val output = new Array[ContigAggregate](aggMap.size)
     var i = 0
     val iter = aggMap.toIterator
@@ -114,10 +114,10 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       contigLen = contigLen,
       events = new Array[Short](arrayLen),
       alts = new MultiLociAlts(),
-      quals = new MultiLociQuals(),
+      quals = if(Conf.includeBaseQualities ) new MultiLociQuals() else null,
       startPosition = read.getStart,
       maxPosition = contigLen - 1,
-      qualityCache = new QualityCache(QualityConstants.CACHE_SIZE))
+      qualityCache =  if(Conf.includeBaseQualities ) new QualityCache(QualityConstants.CACHE_SIZE) else null)
 
     aggMap += contig -> contigEventAggregate
     contigMaxReadLen += contig -> 0

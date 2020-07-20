@@ -62,6 +62,7 @@ case class ReadQualSummary (start: Int, end: Int, qualString: String, cigar: Cig
     }
     0
   }
+
 }
 
 

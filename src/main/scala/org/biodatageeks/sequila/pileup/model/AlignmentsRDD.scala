@@ -59,7 +59,8 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
             }
           AnalyzeReadsTimer.time {read.analyzeRead(contig, contigAggregate, contigMaxReadLen)}
         }
-        PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
+        val aggregates = PrepareOutupTimer.time {prepareOutputAggregates(aggMap, contigMaxReadLen).toIterator}
+        aggregates
       }
     }
   }

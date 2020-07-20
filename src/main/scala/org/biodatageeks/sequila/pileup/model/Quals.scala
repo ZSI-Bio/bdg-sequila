@@ -30,10 +30,15 @@ object Quals {
   }
 
 
+
+
   implicit class MultiLociQualsExtension (val map: Quals.MultiLociQuals) {
     def ++ (that: Quals.MultiLociQuals): Quals.MultiLociQuals = (map ++ that).asInstanceOf[Quals.MultiLociQuals]
 
     def updateQuals(position: Int, alt: Char, quality: Short): Unit = {
+//      if(alt == QualityConstants.REF_SYMBOL && quality==QualityConstants.FREQ_QUAL)
+//        return
+
       val altByte = alt.toByte
 
       val qualMap = map.getOrElse(position, new SingleLocusQuals())
@@ -54,5 +59,22 @@ object Quals {
         mergedQualsMap += k -> map.getOrElse(k, new SingleLocusQuals()).merge(mapOther.getOrElse(k, new SingleLocusQuals()))
       mergedQualsMap
     }
+
+    def totalQualityNumber: Long =  {
+      map.map{case(k,v) => k -> map(k).derivedCoverage}.foldLeft(0L)(_ + _._2)
+    }
+
+    def getQualitiesCount: mutable.LongMap[Int] = {
+      val res = new mutable.LongMap[Int]()
+      map.map{ case(k,v) =>
+        v.map{ case (kk,vv) =>
+          for (item<-vv)
+            if(res.contains(item)) res.update(item, res(item)+1)
+            else res.update(item, 1)
+          }
+      }
+      res
+    }
+
   }
 }

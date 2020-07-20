@@ -1,6 +1,5 @@
 package org.biodatageeks.sequila.pileup.model
 
-import org.biodatageeks.sequila.pileup.conf.QualityConstants
 import org.biodatageeks.sequila.utils.FastMath
 
 import scala.collection.mutable
@@ -16,7 +15,10 @@ object Quals {
   implicit class SingleLocusQualsExtension(val map: Quals.SingleLocusQuals) {
     def derivedCoverage:Short = map.foldLeft(0)(_+_._2.length).toShort
 
+    def getTotalEntries:Long = map.foldLeft(0)(_ + _._2.length).toLong
+
     def merge(mapOther: SingleLocusQuals): SingleLocusQuals = {
+
       val fastMerge = FastMath.merge(map, mapOther)
       if (fastMerge.isDefined)
         return FastMath.merge(map, mapOther).get.asInstanceOf[SingleLocusQuals]
@@ -27,6 +29,45 @@ object Quals {
         mergedMap(k) = map.getOrElse(k, ArrayBuffer.empty[Short])++(mapOther.getOrElse(k, ArrayBuffer.empty[Short]))
       mergedMap
     }
+
+    def addQualityForAlt(alt: Char, quality: Short):Unit ={
+      val altByte = alt.toByte
+      val array = map.getOrElse(altByte, new ArrayBuffer[Short]())
+
+      val qualityIndex =findQualityIndex(array,quality)
+      qualityIndex match {
+        case Some(ind) =>
+          array(ind+1) = (array(ind+1)+ 1).toShort
+
+        case None => {
+          array.append(quality)
+          array.append(1)
+        }
+      }
+      map.update(altByte,array)
+    }
+
+
+    def findQualityIndex(array:ArrayBuffer[Short], quality:Short): Option[Int] ={
+
+      if (array.isEmpty)
+        return None
+
+      val qualityIndex =array.indexOf(quality)
+      if (qualityIndex == -1)
+        return None
+
+      else if (qualityIndex >= 0 && qualityIndex% 2 == 0)
+        return Some(qualityIndex)
+
+      else {
+        val newArr = new ArrayBuffer[Short]()
+        array.copyToBuffer(newArr)
+        for (i <- 0 to qualityIndex)
+          newArr(i)=0
+        return findQualityIndex(newArr,quality)
+      }
+    }
   }
 
 
@@ -36,16 +77,10 @@ object Quals {
     def ++ (that: Quals.MultiLociQuals): Quals.MultiLociQuals = (map ++ that).asInstanceOf[Quals.MultiLociQuals]
 
     def updateQuals(position: Int, alt: Char, quality: Short): Unit = {
-//      if(alt == QualityConstants.REF_SYMBOL && quality==QualityConstants.FREQ_QUAL)
-//        return
 
-      val altByte = alt.toByte
-
-      val qualMap = map.getOrElse(position, new SingleLocusQuals())
-      val array = qualMap.getOrElse(altByte, new ArrayBuffer[Short]())
-      array.append(quality)
-      qualMap.update(altByte,array)
-      map.update(position, qualMap)
+      val singleLocusQualMap = map.getOrElse(position, new SingleLocusQuals())
+      singleLocusQualMap.addQualityForAlt(alt,quality)
+      map.update(position, singleLocusQualMap)
     }
 
     def merge(mapOther: MultiLociQuals): MultiLociQuals = {
@@ -60,18 +95,20 @@ object Quals {
       mergedQualsMap
     }
 
-    def totalQualityNumber: Long =  {
-      map.map{case(k,v) => k -> map(k).derivedCoverage}.foldLeft(0L)(_ + _._2)
+    def getTotalEntries: Long =  {
+      map.map{case(k,v) => k -> map(k).getTotalEntries}.foldLeft(0L)(_ + _._2)
     }
 
     def getQualitiesCount: mutable.LongMap[Int] = {
       val res = new mutable.LongMap[Int]()
       map.map{ case(k,v) =>
         v.map{ case (kk,vv) =>
-          for (item<-vv)
+          for (index <- vv.indices by 2) {
+            val item = vv(index)
             if(res.contains(item)) res.update(item, res(item)+1)
             else res.update(item, 1)
           }
+        }
       }
       res
     }

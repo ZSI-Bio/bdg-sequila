@@ -64,10 +64,17 @@ class PileupTestBase extends FunSuite
     val byteToString = ((byte: Byte) => byte.toString)
 
     val qualMapToCoverage = (map: Map[Byte, mutable.WrappedArray[Short]], cov: Short) => {
+      var sum:Long =0
       if (map == null)
         cov
-      else
-        (map.foldLeft(0)(_+_._2.length)).toShort
+      else {
+        map.foreach({case (k,v) =>
+        for (index <- 0 until v.length-1 by 2)
+          sum += v(index+1)
+        })
+
+        sum
+      }
     }
 
     val covEquality = (originalCov:Short, qualityCov:Short) => originalCov==qualityCov

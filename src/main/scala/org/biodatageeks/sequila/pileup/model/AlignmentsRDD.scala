@@ -83,6 +83,7 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       val nextVal = iter.next()
       val contig = nextVal._1
       val contigEventAgg = nextVal._2
+      val copyCache = contigEventAgg.qualityCache.copy
 
       val maxIndex: Int = FastMath.findMaxIndex(contigEventAgg.events)
       val agg = ContigAggregate(
@@ -90,12 +91,12 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
         contigEventAgg.contigLen,
         util.Arrays.copyOfRange(contigEventAgg.events, 0, maxIndex + 1), //FIXME: https://stackoverflow.com/questions/37969193/why-is-array-slice-so-shockingly-slow
         contigEventAgg.alts,
-        contigEventAgg.quals,
+        contigEventAgg.quals.clone(),
         contigEventAgg.startPosition,
         contigEventAgg.startPosition + maxIndex,
         0,
         cigarMap(contig),
-        contigEventAgg.qualityCache)
+        copyCache)
       output(i) = agg
       i += 1
     }

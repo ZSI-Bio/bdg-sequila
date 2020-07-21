@@ -22,6 +22,7 @@ object Quals {
       sum.toShort
     }
 
+
     def getTotalEntries:Long = map.foldLeft(0)(_ + _._2.length).toLong
 
     def merge(mapOther: SingleLocusQuals): SingleLocusQuals = {

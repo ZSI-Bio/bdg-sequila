@@ -28,16 +28,6 @@ class PileupConverter (spark: SparkSession) {
       val buffer = new StringBuilder()
       var i = 0
 
-//      while (i < splitted.length) {
-//        if (i == 0 && splitted(i).nonEmpty)
-//          buffer.append(splitted(i))
-//        else if (i == 0 && splitted(i).isEmpty)
-//          i += 1
-//        else if (i > 0 && splitted(i).nonEmpty)
-//          buffer.append(splitted(i).substring(1))
-//        i += 1
-//      }
-
       while (i < splitted.length) {
         if (i == 0)
           buffer.append(splitted(i))
@@ -45,7 +35,6 @@ class PileupConverter (spark: SparkSession) {
           buffer.append(splitted(i).substring(1))
         i += 1
       }
-
 
       val pileup = buffer.toString()
       val map = mutable.Map.empty[Byte, Short]

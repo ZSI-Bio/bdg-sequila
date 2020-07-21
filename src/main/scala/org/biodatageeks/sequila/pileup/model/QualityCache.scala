@@ -10,8 +10,14 @@ class QualityCache(size: Int) extends Serializable {
   var isFull = false // necessary for resize method, otherwise can be removed
 
   def this (qualityArray:Array[ReadQualSummary] ) {
-    this(qualityArray.size)
+    this(qualityArray.size/2)
     this.cache=qualityArray
+  }
+
+  def copy:QualityCache = {
+    val newCache = new QualityCache(size)
+    cache.copyToArray(newCache.cache)
+    newCache
   }
   def length: Int = cache.length
   def apply(index: Int):ReadQualSummary = cache(index)
@@ -24,6 +30,8 @@ class QualityCache(size: Int) extends Serializable {
   }
 
   def addOrReplace(readSummary: ReadQualSummary):Unit = {
+    if (isFull)
+      return
     cache(currentIndex) = null
     cache(currentIndex) = readSummary
     if (currentIndex + 1 >= length) {

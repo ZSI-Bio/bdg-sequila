@@ -146,7 +146,7 @@ case class ExtendedReads(r:SAMRecord) {
 
   def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)
-    for (read <- reads)
+     for (read <- reads)
       agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, read.getBaseQualityForPosition(altPosition) )
   }
 }

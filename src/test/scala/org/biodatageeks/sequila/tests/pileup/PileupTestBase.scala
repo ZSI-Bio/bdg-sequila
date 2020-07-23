@@ -3,6 +3,8 @@ package org.biodatageeks.sequila.tests.pileup
 import com.holdenkarau.spark.testing.{DataFrameSuiteBase, SharedSparkContext}
 import org.apache.spark.sql.{Dataset, Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{IntegerType, ShortType, StringType, StructField, StructType}
+import org.biodatageeks.sequila.pileup.conf.QualityConstants
+import org.biodatageeks.sequila.pileup.model.Quals._
 import org.eclipse.jetty.server.Authentication.Wrapped
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
@@ -64,17 +66,23 @@ class PileupTestBase extends FunSuite
     val byteToString = ((byte: Byte) => byte.toString)
 
     val qualMapToCoverage = (map: Map[Byte, mutable.WrappedArray[Short]], cov: Short) => {
-      var sum:Long =0
-      if (map == null)
-        cov
-      else {
-        map.foreach({case (k,v) =>
-        for (index <- 0 until v.length-1 by 2)
-          sum += v(index+1)
-        })
+      if (map == null) cov
+      else map.map({case (k,v) => v.sum}).sum
+    }
 
-        sum
+    val qualMapAgg = (map: Map[Byte, mutable.WrappedArray[Short]]) => {
+//      val nestedMap = new mutable.HashMap[String, Short]()
+
+      if (map == null) null
+      else map.map({case (k,v) => {
+        val nestedMap = new mutable.HashMap[String, Short]()
+        for (i <- v.indices)
+          if (v(i) != 0)
+            nestedMap += (i + QualityConstants.OFFSET).toChar.toString -> v(i)
+        k-> nestedMap
       }
+
+      })
     }
 
     val covEquality = (originalCov:Short, qualityCov:Short) => originalCov==qualityCov
@@ -84,6 +92,7 @@ class PileupTestBase extends FunSuite
     spark.udf.register("byteToString", byteToString)
     spark.udf.register("qualMapToCoverage", qualMapToCoverage)
     spark.udf.register("covEquality", covEquality)
+    spark.udf.register("qualMapAgg", qualMapAgg)
 
   }
 

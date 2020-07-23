@@ -9,6 +9,7 @@ import org.biodatageeks.sequila.utils.{DataQualityFuncs, FastMath}
 
 import scala.collection.{JavaConverters, mutable}
 import ReadOperations.implicits._
+import org.apache.spark.util.SizeEstimator
 import org.slf4j.{Logger, LoggerFactory}
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.model.Alts.MultiLociAlts
@@ -83,7 +84,6 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
       val nextVal = iter.next()
       val contig = nextVal._1
       val contigEventAgg = nextVal._2
-      val copyCache = contigEventAgg.qualityCache.copy
 
       val maxIndex: Int = FastMath.findMaxIndex(contigEventAgg.events)
       val agg = ContigAggregate(
@@ -91,13 +91,20 @@ case class AlignmentsRDD(rdd: RDD[SAMRecord]) {
         contigEventAgg.contigLen,
         util.Arrays.copyOfRange(contigEventAgg.events, 0, maxIndex + 1), //FIXME: https://stackoverflow.com/questions/37969193/why-is-array-slice-so-shockingly-slow
         contigEventAgg.alts,
-        contigEventAgg.quals.clone(),
+        contigEventAgg.trimQuals,
         contigEventAgg.startPosition,
         contigEventAgg.startPosition + maxIndex,
         0,
         cigarMap(contig),
-        copyCache)
+        contigEventAgg.qualityCache)
+//      val coef = 1048576.0
+//      val aggSize = SizeEstimator.estimate(agg)/coef
+//      val altsSize = SizeEstimator.estimate(agg.alts)/coef
+//      val qualSize = SizeEstimator.estimate(agg.quals)/coef
+//      val cacheSize = SizeEstimator.estimate(agg.qualityCache)/coef
       output(i) = agg
+
+
       i += 1
     }
     output

@@ -9,12 +9,14 @@ class BaseQualityTestSuite extends PileupTestBase {
 
   val qualCoverageCol = "qual_coverage"
   val covEquality = "cov_equal"
+  val qualAgg = "qualMapAgg"
   val pileupQuery =
     s"""
        |SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END},
        | ${Columns.REF}, ${Columns.COVERAGE},
        | ${Columns.ALTS}, ${Columns.QUALS},
        | qualMapToCoverage(${Columns.QUALS}, ${Columns.COVERAGE}) as $qualCoverageCol,
+       | qualMapAgg(${Columns.QUALS}) as $qualAgg,
        | covEquality (${Columns.COVERAGE}, qualMapToCoverage(${Columns.QUALS}, ${Columns.COVERAGE}) ) as $covEquality
        |FROM  pileup('$tableName', '${sampleId}', '$referencePath', true)
        |ORDER BY ${Columns.CONTIG}
@@ -28,7 +30,10 @@ class BaseQualityTestSuite extends PileupTestBase {
     val result = ss.sql(pileupQuery)
 //    result.show(100, truncate = false)
 //    assert(result.count()==14671)
-//    result.where(s"$covEquality=false").show(20, truncate=false)
+//    result.where(s"${Columns.CONTIG}=1 and $covEquality = false").show(20, truncate=false)
+
+    result.select(Columns.CONTIG, Columns.START, Columns.END,Columns.REF, Columns.ALTS, Columns.COVERAGE,qualAgg, qualCoverageCol)
+      .where(s"$covEquality=false").show(20, truncate=false)
 
     val equals = result.select(covEquality).distinct()
     assert(equals.count()==1)
@@ -44,7 +49,11 @@ class BaseQualityTestSuite extends PileupTestBase {
     val result = ss.sql(pileupQuery)
     //result.show(100, truncate = false)
     assert(result.count()==14671)
-    result.where(s"$covEquality=false").show(20, truncate=false)
+//    result.where(s"$covEquality=false").show(20, truncate=false)
+
+  result.select(Columns.CONTIG, Columns.START, Columns.END,Columns.REF, Columns.ALTS, Columns.COVERAGE, qualCoverageCol).
+    where(s"$covEquality=false").show(50, truncate=false)
+
 
     val equals = result.select(covEquality).distinct()
     assert(equals.count()==1)

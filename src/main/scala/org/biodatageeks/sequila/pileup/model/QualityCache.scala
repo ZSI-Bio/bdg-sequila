@@ -30,8 +30,6 @@ class QualityCache(size: Int) extends Serializable {
   }
 
   def addOrReplace(readSummary: ReadQualSummary):Unit = {
-    if (isFull)
-      return
     cache(currentIndex) = null
     cache(currentIndex) = readSummary
     if (currentIndex + 1 >= length) {

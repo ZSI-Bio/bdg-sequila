@@ -37,6 +37,7 @@ case class ContigAggregate(
   private var altsKeyCacheInd = 0
   private var altsKeyCacheMin = Int.MaxValue
   private var altsKeyCacheMax = Int.MinValue
+
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
@@ -48,6 +49,7 @@ case class ContigAggregate(
 
 
   def addToCache(readQualSummary: ReadQualSummary):Unit = qualityCache.addOrReplace(readQualSummary)
+  def trimQuals: MultiLociQuals = quals.trim
 
   def calculateMaxLength(allPositions: Boolean): Int = {
     if (! allPositions)
@@ -78,7 +80,7 @@ case class ContigAggregate(
     }
   }
 
-  def updateQuals(pos: Int, alt: Char, quality: Short): Unit = quals.updateQuals(pos, alt,quality)
+  def updateQuals(pos: Int, alt: Char, quality: Short, updateMax:Boolean = true): Unit = quals.updateQuals(pos, alt,quality, updateMax)
 
   def getTail:Tail ={
     val tailStartIndex = maxPosition - maxSeqLen
@@ -167,7 +169,7 @@ case class ContigAggregate(
               val reads = correction.qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)
-                adjustedQuals.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual)
+                adjustedQuals.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual, updateMax = false)
               }
             }
             adjustedQuals
@@ -192,7 +194,7 @@ case class ContigAggregate(
               val reads = qualityCache.getReadsOverlappingPositionOld(pos)
               for (read <- reads) {
                 val qual = read.getBaseQualityForPosition(pos.toInt)
-                qualsInterim.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual)
+                qualsInterim.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, qual, updateMax=false)
               }
             }
             qualsInterim
@@ -257,4 +259,6 @@ case class ContigAggregate(
       case None => qualsMap
     }
   }
+
+
 }

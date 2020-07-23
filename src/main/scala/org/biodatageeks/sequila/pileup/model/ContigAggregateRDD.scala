@@ -116,8 +116,6 @@ case class AggregateRDD(rdd: RDD[ContigAggregate]) {
   private def prepareOutputQualMap(agg: ContigAggregate, posStart: Int, ref:String, cov: Short): Map[Byte, Array[Short]] = {
     if (Conf.includeBaseQualities) {
       val qualsMap = agg.quals(posStart)
-      if(qualsMap.derivedCoverage != cov.toShort)
-        println()
       qualsMap.map {
         case (k, v) =>
           if (k != QualityConstants.REF_SYMBOL)

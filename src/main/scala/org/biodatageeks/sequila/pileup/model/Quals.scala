@@ -1,29 +1,23 @@
 package org.biodatageeks.sequila.pileup.model
 
+import org.biodatageeks.sequila.pileup.conf.QualityConstants
 import org.biodatageeks.sequila.utils.FastMath
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object Quals {
-  type SingleLocusQuals = mutable.HashMap[Byte, ArrayBuffer[Short]]
-  val SingleLocusQuals = mutable.HashMap[Byte, ArrayBuffer[Short]] _
+  type SingleLocusQuals = mutable.HashMap[Byte, Array[Short]]
+  val SingleLocusQuals = mutable.HashMap[Byte, Array[Short]] _
 
   type MultiLociQuals = mutable.LongMap[Quals.SingleLocusQuals]
   val MultiLociQuals = mutable.LongMap[Quals.SingleLocusQuals] _
 
   implicit class SingleLocusQualsExtension(val map: Quals.SingleLocusQuals) {
-    def derivedCoverage:Short = {
-      var sum =0
-      map.foreach({case (k,v) =>
-        for (index <- 0 until v.length-1 by 2)
-          sum += v(index+1)
-      })
-      sum.toShort
-    }
+    def derivedCoverage:Short = map.map({case (k,v) => v.sum}).sum
 
 
-    def getTotalEntries:Long = map.foldLeft(0)(_ + _._2.length).toLong
+    def totalEntries:Long = map.map({case (k,v) => 1}).sum
 
     def merge(mapOther: SingleLocusQuals): SingleLocusQuals = {
 
@@ -34,23 +28,50 @@ object Quals {
       val keyset = map.keySet++mapOther.keySet
       val mergedMap = new SingleLocusQuals()
       for (k <- keyset)
-        mergedMap(k) = map.getOrElse(k, ArrayBuffer.empty[Short])++(mapOther.getOrElse(k, ArrayBuffer.empty[Short]))
+        mergedMap(k) = addArrays(map.get(k), mapOther.get(k))
       mergedMap
     }
 
-    def addQualityForAlt(alt: Char, quality: Short):Unit ={
+    def addArrays(arrOp1: Option[Array[Short]], arrOp2:Option[Array[Short]] ): Array[Short] ={
+      if (arrOp1.isEmpty)
+        return arrOp2.get
+      if (arrOp2.isEmpty)
+        return arrOp1.get
+
+      val arr1 = arrOp1.get
+      val arr2 = arrOp2.get
+
+      if (arr1.length >= arr2.length) {
+        for(ind <- arr2.indices)
+          arr1(ind) = (arr1(ind) + arr2(ind)).toShort
+        arr1
+      }else {
+        for(ind <- arr1.indices)
+          arr2(ind) = (arr1(ind) + arr2(ind)).toShort
+        arr2
+      }
+
+    }
+
+    def trim: SingleLocusQuals = {
+      map.map({case(k,v) => k->v.take(v(QualityConstants.MAX_QUAL_IND) + 1)})
+    }
+
+    def addQualityForAlt(alt: Char, quality: Short, updateMax: Boolean=true):Unit ={
       val altByte = alt.toByte
-      val array = map.getOrElse(altByte, new ArrayBuffer[Short]())
-
-      val qualityIndex =findQualityIndex(array,quality)
-      qualityIndex match {
-        case Some(ind) =>
-          array(ind+1) = (array(ind+1)+ 1).toShort
-
-        case None => {
-          array.append(quality)
-          array.append(1)
+      var array = map.getOrElse(altByte, new Array[Short](QualityConstants.QUAL_ARR_SIZE))
+      val qualityIndex = quality - QualityConstants.OFFSET
+      if(updateMax ) {
+        array(qualityIndex) = (array(qualityIndex) + 1).toShort
+        if (qualityIndex > array(array.length - 1))
+          array(array.length - 1) = qualityIndex.toShort
+      } else {
+        if (qualityIndex >= array.length){
+          val extendedArray = new Array[Short](QualityConstants.QUAL_ARR_SIZE)
+          System.arraycopy(array,0,extendedArray, 0, array.length)
+          array = extendedArray
         }
+        array(qualityIndex) = (array(qualityIndex) + 1).toShort
       }
       map.update(altByte,array)
     }
@@ -84,10 +105,12 @@ object Quals {
   implicit class MultiLociQualsExtension (val map: Quals.MultiLociQuals) {
     def ++ (that: Quals.MultiLociQuals): Quals.MultiLociQuals = (map ++ that).asInstanceOf[Quals.MultiLociQuals]
 
-    def updateQuals(position: Int, alt: Char, quality: Short): Unit = {
+    def trim: MultiLociQuals = map.map({case (k,v) => k-> v.trim})
+
+    def  updateQuals(position: Int, alt: Char, quality: Short, updateMax:Boolean = true): Unit = {
 
       val singleLocusQualMap = map.getOrElse(position, new SingleLocusQuals())
-      singleLocusQualMap.addQualityForAlt(alt,quality)
+      singleLocusQualMap.addQualityForAlt(alt,quality, updateMax)
       map.update(position, singleLocusQualMap)
     }
 
@@ -104,7 +127,7 @@ object Quals {
     }
 
     def getTotalEntries: Long =  {
-      map.map{case(k,v) => k -> map(k).getTotalEntries}.foldLeft(0L)(_ + _._2)
+      map.map{case(k,v) => k -> map(k).totalEntries}.foldLeft(0L)(_ + _._2)
     }
 
     def getQualitiesCount: mutable.LongMap[Int] = {

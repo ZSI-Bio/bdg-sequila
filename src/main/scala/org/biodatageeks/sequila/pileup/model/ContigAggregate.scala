@@ -15,7 +15,7 @@ import org.biodatageeks.sequila.pileup.model.Alts._
 import org.biodatageeks.sequila.pileup.model.Quals._
 
 import scala.collection.mutable.ArrayBuffer
-
+import scala.collection.JavaConversions._
 
 /** Events aggregation on contig
   */
@@ -37,14 +37,17 @@ case class ContigAggregate(
   private var altsKeyCacheInd = 0
   private var altsKeyCacheMin = Int.MaxValue
   private var altsKeyCacheMax = Int.MinValue
+  private var altsKeyCacheLastValue = Array.emptyLongArray
+  private var altsKeyCacheTree = new htsjdk.samtools.util.IntervalTree[Long]()
 
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
   def getRange: broadcast.Range = broadcast.Range(contig, startPosition, maxPosition)
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
   def getAltPositionsForRange(start: Int, end: Int): Array[Long] = {
     if (end >= altsKeyCacheMin && start <= altsKeyCacheMax)
-      altsKeyCache.filter(pos => pos >= start && pos <= end)
-    else Array.emptyLongArray
+      altsKeyCacheTree.overlappers(start, end).toArray.map(_.getValue)
+    else
+      Array.emptyLongArray
   }
 
 
@@ -69,10 +72,7 @@ case class ContigAggregate(
     val shouldUpdateCache =  Conf.includeBaseQualities && ! alts.contains(pos)
     alts.updateAlts(pos, alt)
     if(shouldUpdateCache) {
-      if(altsKeyCacheInd == QualityConstants.CACHE_SIZE/2 - 1)
-        altsKeyCacheInd = 0
-      altsKeyCache(altsKeyCacheInd) = pos
-      altsKeyCacheInd += 1
+      altsKeyCacheTree.put(pos, pos, pos)
       if(pos > altsKeyCacheMax)
         altsKeyCacheMax = pos
       if(pos < altsKeyCacheMin)

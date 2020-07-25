@@ -37,7 +37,7 @@ case class ContigAggregate(
   private var altsKeyCacheInd = 0
   private var altsKeyCacheMin = Int.MaxValue
   private var altsKeyCacheMax = Int.MinValue
-  private var altsKeyCacheLastValue = Array.emptyLongArray
+  private var startRewinding = false
   private var altsKeyCacheTree = new htsjdk.samtools.util.IntervalTree[Long]()
 
   def hasAltOnPosition(pos:Int):Boolean = alts.contains(pos)
@@ -73,6 +73,14 @@ case class ContigAggregate(
     alts.updateAlts(pos, alt)
     if(shouldUpdateCache) {
       altsKeyCacheTree.put(pos, pos, pos)
+      if(altsKeyCacheInd == QualityConstants.CACHE_SIZE/2 - 1) {
+        altsKeyCacheInd = 0
+        startRewinding = true
+      }
+      val evictedPos = altsKeyCache(altsKeyCacheInd).toInt
+      altsKeyCache(altsKeyCacheInd) = pos
+      altsKeyCacheInd += 1
+      if(startRewinding) altsKeyCacheTree.remove(evictedPos, evictedPos)
       if(pos > altsKeyCacheMax)
         altsKeyCacheMax = pos
       if(pos < altsKeyCacheMin)

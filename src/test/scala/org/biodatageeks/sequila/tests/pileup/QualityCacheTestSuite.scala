@@ -28,8 +28,8 @@ class QualityCacheTestSuite extends FunSuite{
     qualCache.addOrReplace(read0)
     qualCache.addOrReplace(read1) // different syntax for adding to cache
 
-    assert(qualCache(0).start==read0.start)
-    assert(qualCache(1).start==read1.start)
+    assert(qualCache(0)(0).start==read0.start)
+    assert(qualCache(1)(0).start==read1.start)
 
     qualCache.resize(4)
     assert(qualCache.length==4)
@@ -37,9 +37,9 @@ class QualityCacheTestSuite extends FunSuite{
     qualCache.addOrReplace(read2)
 
     //check previous values exist
-    assert(qualCache(0).start==read0.start)
-    assert(qualCache(1).start==read1.start)
-    assert(qualCache(2).start==read2.start)
+    assert(qualCache(0)(0).start==read0.start)
+    assert(qualCache(1)(0).start==read1.start)
+    assert(qualCache(2)(0).start==read2.start)
 
   }
 

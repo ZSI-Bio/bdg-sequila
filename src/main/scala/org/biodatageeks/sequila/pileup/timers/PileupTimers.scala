@@ -64,7 +64,8 @@ object PileupTimers extends Metrics {
   val FillPastQualitiesFromCacheTimer = timer ("FillPastQualitiesFromCacheTimer from Read")
   val AnalyzeReadsCalculateAltsParseMDTimer = timer("AnalyzeReadsCalculateAltsParseMDTimer from Read")
   val AnalyzeReadsUpdateMaxReadLenInContigTimer = timer("AnalyzeReadsUpdateMaxReadLenInContigTimer from PileupMethods")
-
+  val ReadQualSummaryTimer = timer ("ReadQualSummaryTimer from Read")
+  val ReadQualSummaryFillExisitingQualTimer = timer("ReadQualSummaryFillExisitingQualTimer from Read")
   //
 
 

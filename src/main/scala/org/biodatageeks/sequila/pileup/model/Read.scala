@@ -28,12 +28,14 @@ case class ExtendedReads(r:SAMRecord) {
     AnalyzeReadsCalculateEventsTimer.time { calculateEvents(contig, agg, contigMaxReadLen) }
     val foundAlts = AnalyzeReadsCalculateAltsTimer.time{calculateAlts(agg, qualityCache) }
       if (Conf.includeBaseQualities) {
-        val cigar = r.getCigar
-        val start = r.getStart
-        val cigarConf = CigarDerivedConf.create(start, cigar)
-        val readQualSummary = ReadQualSummary(start, r.getEnd, r.getBaseQualities, cigarConf)
-        fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary)
-        agg.addToCache(readQualSummary)
+        ReadQualSummaryTimer.time{
+          val cigar = r.getCigar
+          val start = r.getStart
+          val cigarConf = CigarDerivedConf.create(start, cigar)
+          val readQualSummary = ReadQualSummary(start, r.getEnd, r.getBaseQualities, cigarConf)
+          ReadQualSummaryFillExisitingQualTimer.time { fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary) }
+          agg.addToCache(readQualSummary)
+        }
       }
   }
 
@@ -140,10 +142,9 @@ case class ExtendedReads(r:SAMRecord) {
   def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:scala.collection.Set[Int], readQualSummary: ReadQualSummary): Unit = {
     val altsPositions = agg.getAltPositionsForRange(r.getStart, r.getEnd)
     val positionsToFill = altsPositions diff blackList
-
     for (pos <- positionsToFill) {
       if(!readQualSummary.hasDeletionOnPosition(pos))
-        agg.updateQuals(pos.toInt, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos.toInt))
+        agg.updateQuals(pos, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos))
     }
   }
 

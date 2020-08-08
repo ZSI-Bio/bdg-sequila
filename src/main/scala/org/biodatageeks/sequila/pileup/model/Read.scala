@@ -1,11 +1,12 @@
 package org.biodatageeks.sequila.pileup.model
 
+import htsjdk.samtools.util.StringUtil
 import htsjdk.samtools.{CigarOperator, SAMRecord}
 import org.biodatageeks.sequila.pileup.MDTagParser
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
-
 import org.biodatageeks.sequila.pileup.timers.PileupTimers._
+
 import scala.collection.mutable
 
 object ReadOperations {
@@ -139,19 +140,26 @@ case class ExtendedReads(r:SAMRecord) {
   }
 
 
+  //~100s
   def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:scala.collection.Set[Int], readQualSummary: ReadQualSummary): Unit = {
-    val altsPositions =  agg.getAltPositionsForRange(r.getStart, r.getEnd)
-    val positionsToFill =  altsPositions diff blackList
-    for (pos <- positionsToFill) {
-      if(!readQualSummary.cigarDerivedConf.hasDel || !readQualSummary.hasDeletionOnPosition(pos))
-        agg.updateQuals(pos, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos), false)
+    val altsPositions =  agg.getAltPositionsForRange(r.getStart, r.getEnd) //~1s
+    val positionsToFill =  altsPositions diff blackList //~1s
+    for (pos <- positionsToFill.iterator) { //~10s empty loop
+      if(!readQualSummary.cigarDerivedConf.hasDel || !readQualSummary.hasDeletionOnPosition(pos) ) {
+        val relativePos = if(!readQualSummary.cigarDerivedConf.hasIndel && !readQualSummary.cigarDerivedConf.hasClip ) pos - readQualSummary.start
+        else readQualSummary.relativePosition(pos)
+        val qual = readQualSummary.qualsArray(relativePos)
+        agg.updateQuals(pos, QualityConstants.REF_SYMBOL, qual, false)
       }
+    }
   }
 
   def fillPastQualitiesFromCache(agg: ContigAggregate, altPosition: Int, qualityCache: QualityCache): Unit = {
     val reads = qualityCache.getReadsOverlappingPosition(altPosition)
      for (read <- reads) {
-      agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, read.getBaseQualityForPosition(altPosition) )
+       val relativePos = if(!read.cigarDerivedConf.hasIndel && !read.cigarDerivedConf.hasClip ) altPosition - read.start
+       else read.relativePosition(altPosition)
+       agg.updateQuals(altPosition, QualityConstants.REF_SYMBOL, read.qualsArray(relativePos) )
      }
   }
 }

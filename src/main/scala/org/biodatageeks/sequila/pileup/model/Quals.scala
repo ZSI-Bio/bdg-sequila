@@ -79,7 +79,7 @@ object Quals {
         if( !firstUpdate || map.contains(position) ) {
           map(position).addQualityForAlt(alt, quality)
         }
-        else{
+        else {
           val singleLocusQualMap = new SingleLocusQuals()
           singleLocusQualMap.addQualityForAlt(alt, quality)
           map.update(position, singleLocusQualMap)
@@ -102,8 +102,8 @@ object Quals {
         map.map { case (k, v) => k -> map(k).totalEntries }.foldLeft(0L)(_ + _._2)
       }
 
-      def getQualitiesCount: mutable.LongMap[Int] = {
-        val res = new mutable.LongMap[Int]()
+      def getQualitiesCount: mutable.IntMap[Int] = {
+        val res = new mutable.IntMap[Int]()
         map.map { case (k, v) =>
           v.map { case (kk, vv) =>
             for (index <- vv.indices by 2) {

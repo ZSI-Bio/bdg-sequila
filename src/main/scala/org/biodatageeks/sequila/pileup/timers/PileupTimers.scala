@@ -66,6 +66,7 @@ object PileupTimers extends Metrics {
   val AnalyzeReadsUpdateMaxReadLenInContigTimer = timer("AnalyzeReadsUpdateMaxReadLenInContigTimer from PileupMethods")
   val ReadQualSummaryTimer = timer ("ReadQualSummaryTimer from Read")
   val ReadQualSummaryFillExisitingQualTimer = timer("ReadQualSummaryFillExisitingQualTimer from Read")
+  val AddQualityForAltTimer = timer("AddQualityForAltTimer from Read")
   //
 
 

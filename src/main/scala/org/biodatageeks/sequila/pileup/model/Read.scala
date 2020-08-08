@@ -143,7 +143,7 @@ case class ExtendedReads(r:SAMRecord) {
     val altsPositions =  agg.getAltPositionsForRange(r.getStart, r.getEnd)
     val positionsToFill =  altsPositions diff blackList
     for (pos <- positionsToFill) {
-      if(!readQualSummary.hasDeletionOnPosition(pos))
+      if(!readQualSummary.cigarDerivedConf.hasDel || !readQualSummary.hasDeletionOnPosition(pos))
         agg.updateQuals(pos, QualityConstants.REF_SYMBOL, readQualSummary.getBaseQualityForPosition(pos), false)
       }
   }

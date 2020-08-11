@@ -1,15 +1,28 @@
 package org.biodatageeks.sequila.pileup.model
 
+import org.apache.spark.internal.Logging
 
 
 case class ReadQualSummary (start: Int, end: Int,
                             qualsArray: Array[Byte],
+                            debugReadName: String,
                             cigarDerivedConf: CigarDerivedConf
-                            ) {
+                            ) extends Logging{
 
   @inline
   def getBaseQualityForPosition(position: Int): Byte = {
-    qualsArray(relativePosition(position))
+    try {
+      qualsArray(relativePosition(position))
+    }
+    catch {
+      case e: Exception => {
+        log.error(s"ReadName: ${debugReadName}, position: ${position}")
+        'E'.toByte
+      }
+    }
+    finally {
+
+    }
   }
 
   @inline

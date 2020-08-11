@@ -38,7 +38,6 @@ case class ContigAggregate(
   def getPileupUpdate:PileupUpdate = new PileupUpdate(ArrayBuffer(getTail), ArrayBuffer(getRange))
   def getAltPositionsForRange(start: Int, end: Int): SortedSet[Int] = altsKeyCache.range(start,end+1)
   def addToCache(readQualSummary: ReadQualSummary):Unit = qualityCache.addOrReplace(readQualSummary)
-  def trimQuals: MultiLociQuals = if(quals != null) quals else null //FIXME: removed temporary trimming
 
   def calculateMaxLength(allPositions: Boolean): Int = {
     if (! allPositions)

@@ -8,7 +8,7 @@ lazy val sparkVersion = Properties.envOrElse("SPARK_VERSION", DEFAULT_SPARK_2_VE
 
 version := s"0.6.0-spark-${sparkVersion}"
 organization := "org.biodatageeks"
-scalaVersion := "2.12.16"
+scalaVersion := "2.12.12"
 
 
 val DEFAULT_HADOOP_VERSION = "2.6.5"
@@ -24,26 +24,26 @@ libraryDependencies +=  "org.apache.spark" % "spark-core_2.12" % sparkVersion
 libraryDependencies +=  "org.apache.spark" % "spark-sql_2.12" % sparkVersion
 libraryDependencies +=  "org.apache.spark" %% "spark-hive" % sparkVersion
 libraryDependencies +=  "org.apache.spark" %% "spark-hive-thriftserver" % "2.4.0"
-libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.12" % "2.4.5_0.14.0" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
-libraryDependencies += "org.bdgenomics.adam" %% "adam-core-spark2" % "0.32.0"
-libraryDependencies += "org.bdgenomics.adam" %% "adam-apis-spark2" % "0.32.0"
-libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.32.0"
+libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.12" % "2.4.3_0.14.0" % "test" excludeAll ExclusionRule(organization = "javax.servlet") excludeAll (ExclusionRule("org.apache.hadoop"))
+libraryDependencies += "org.bdgenomics.adam" %% "adam-core-spark2" % "0.27.0"
+libraryDependencies += "org.bdgenomics.adam" %% "adam-apis-spark2" % "0.27.0"
+libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.27.0"
 libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.toString()
 libraryDependencies += "org.rogach" %% "scallop" % "3.1.2"
 libraryDependencies += "org.bdgenomics.utils" % "utils-metrics-spark2_2.12" % "0.2.16"
 libraryDependencies += "com.github.samtools" % "htsjdk" % "2.19.0"
 libraryDependencies += "ch.cern.sparkmeasure" %% "spark-measure" % "0.16" excludeAll (ExclusionRule("org.apache.hadoop"))
 libraryDependencies += "org.broadinstitute" % "gatk-native-bindings" % "1.0.0" excludeAll (ExclusionRule("org.apache.hadoop"))
-libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.11.0"
-libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.11.0"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.12.1"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.12.1"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-darwin-SNAPSHOT"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-linux-SNAPSHOT"
-libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
+//libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
 libraryDependencies += "de.ruedigermoeller" % "fst" % "2.57"
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.7"
 libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.3.24.v20180605"
 libraryDependencies += "org.apache.derby" % "derbyclient" % "10.14.2.0"
-libraryDependencies += "org.biodatageeks" % "bdg-performance_2.11" % "0.2-SNAPSHOT" excludeAll (ExclusionRule("org.apache.hadoop"))
+libraryDependencies += "org.biodatageeks" % "bdg-performance_2.11" % "0.2-SNAPSHOT" excludeAll (ExclusionRule("org.apache.hadoop"), ExclusionRule("org.apache.spark"), ExclusionRule("org.rogach"), ExclusionRule("com.fasterxml.jackson"), ExclusionRule("ch.cern.sparkmeasure"))
 libraryDependencies += "org.disq-bio" % "disq" % "0.3.3"
 libraryDependencies += "io.projectglow" %% "glow" % "0.5.0"
 libraryDependencies += "com.github.ichoran" %% "thyme" % "0.1.2-SNAPSHOT"

@@ -69,6 +69,11 @@ javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+CMSClassUnloadingEnabled" , "
 
 //fix for using with hdp warehouse connector
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
+scalacOptions ++=Seq (
+  "-opt:l:inline",
+  "-opt-inline-from:org.biodatageeks.pileup.model.**",
+  "-opt-warnings:any-inline-failed"
+)
 updateOptions := updateOptions.value.withLatestSnapshots(false)
 outputStrategy := Some(StdoutOutput)
 

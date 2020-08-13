@@ -117,8 +117,8 @@ case class ExtendedReads(r:SAMRecord) {
         position += 1
 
         val indexInSeq = calculatePositionInReadSeq(position - read.getStart -delCounter)
-        val altBase = getAltBaseFromSequence(indexInSeq)
-        val altBaseQual = getAltBaseQualFromSequence(indexInSeq)
+        val altBase = this.r.getReadString.charAt(indexInSeq-1)
+        val altBaseQual = this.r.getBaseQualities()(indexInSeq-1)
         val altPosition = position - clipLen - 1
         val newAlt = !aggregate.hasAltOnPosition(altPosition)
         aggregate.updateAlts(altPosition, altBase)

@@ -6,6 +6,7 @@ import org.biodatageeks.sequila.pileup.MDTagParser
 import org.biodatageeks.sequila.pileup.conf.{Conf, QualityConstants}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers.{AnalyzeReadsCalculateAltsParseMDTimer, AnalyzeReadsCalculateAltsTimer, AnalyzeReadsCalculateEventsTimer}
 import org.biodatageeks.sequila.pileup.timers.PileupTimers._
+import org.biodatageeks.sequila.pileup.model.Quals._
 
 import scala.collection.mutable
 
@@ -142,14 +143,15 @@ case class ExtendedReads(r:SAMRecord) {
 
   //~100s
   def fillBaseQualitiesForExistingAlts(agg: ContigAggregate, blackList:scala.collection.Set[Int], readQualSummary: ReadQualSummary): Unit = {
-    val altsPositions =  agg.getAltPositionsForRange(r.getStart, r.getEnd) //~1s
+    //val altsPositions =  agg.getAltPositionsForRange(r.getStart, r.getEnd) //~1s
+    val altsPositions =  agg.altsKeyCache.range(r.getStart,r.getEnd+1)
     val positionsToFill =  altsPositions diff blackList //~1s
     for (pos <- positionsToFill.iterator) { //~10s empty loop
       if(!readQualSummary.cigarDerivedConf.hasDel || !readQualSummary.hasDeletionOnPosition(pos) ) {
         val relativePos = if(!readQualSummary.cigarDerivedConf.hasIndel && !readQualSummary.cigarDerivedConf.hasClip ) pos - readQualSummary.start
         else readQualSummary.relativePosition(pos)
         val qual = readQualSummary.qualsArray(relativePos)
-        agg.updateQuals(pos, QualityConstants.REF_SYMBOL, qual, false)
+        agg.quals.updateQuals(pos, QualityConstants.REF_SYMBOL,qual, false, true)
       }
     }
   }

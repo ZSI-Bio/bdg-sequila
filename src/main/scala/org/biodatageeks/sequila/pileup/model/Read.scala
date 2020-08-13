@@ -36,7 +36,7 @@ case class ExtendedReads(r:SAMRecord) {
           val cigarConf = CigarDerivedConf.create(start, cigar)
           val readQualSummary = ReadQualSummary(start, r.getEnd, r.getBaseQualities, cigarConf)
           ReadQualSummaryFillExisitingQualTimer.time { fillBaseQualitiesForExistingAlts(agg, foundAlts, readQualSummary) }
-          agg.addToCache(readQualSummary)
+          agg.qualityCache.addOrReplace(readQualSummary)
         }
       }
   }

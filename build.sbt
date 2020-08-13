@@ -17,7 +17,7 @@ lazy val hadoopVersion = Properties.envOrElse("SPARK_HADOOP_VERSION", DEFAULT_HA
 
 
 dependencyOverrides += "com.google.guava" % "guava" % "15.0"
-
+libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.12.12"
 libraryDependencies += "org.seqdoop" % "hadoop-bam" % "7.10.0"
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion
 libraryDependencies +=  "org.apache.spark" % "spark-core_2.12" % sparkVersion
@@ -28,7 +28,7 @@ libraryDependencies += "com.holdenkarau" % "spark-testing-base_2.12" % "2.4.3_0.
 libraryDependencies += "org.bdgenomics.adam" %% "adam-core-spark2" % "0.27.0"
 libraryDependencies += "org.bdgenomics.adam" %% "adam-apis-spark2" % "0.27.0"
 libraryDependencies += "org.bdgenomics.adam" %% "adam-cli-spark2" % "0.27.0"
-libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.toString()
+libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value
 libraryDependencies += "org.rogach" %% "scallop" % "3.1.2"
 libraryDependencies += "org.bdgenomics.utils" % "utils-metrics-spark2_2.12" % "0.2.16"
 libraryDependencies += "com.github.samtools" % "htsjdk" % "2.19.0"
@@ -38,7 +38,6 @@ libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.12.1"
 libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.12.1"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-darwin-SNAPSHOT"
 libraryDependencies += "com.intel.gkl" % "gkl" % "0.8.5-1-linux-SNAPSHOT"
-//libraryDependencies += "org.hammerlab.bam" %% "load" % "1.2.0-M1"
 libraryDependencies += "de.ruedigermoeller" % "fst" % "2.57"
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.7"
 libraryDependencies += "org.eclipse.jetty" % "jetty-servlet" % "9.3.24.v20180605"
@@ -70,10 +69,17 @@ javaOptions ++= Seq("-Xms512M", "-Xmx8192M", "-XX:+CMSClassUnloadingEnabled" , "
 //fix for using with hdp warehouse connector
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 scalacOptions ++=Seq (
-  "-opt:l:inline",
-  "-opt-inline-from:org.biodatageeks.pileup.model.**",
-  "-opt-warnings:any-inline-failed"
+  "-opt:unreachable-code",
+  "-opt:simplify-jumps",
+  "-opt:redundant-casts",
+  "-opt:box-unbox"
 )
+//"-opt:simplify-jumps",
+//"-opt:allow-skip-core-module-init",
+//"-opt-warnings:any-inline-failed"
+//  "-opt:l:method",
+//"-opt:l:inline",
+//"-opt-inline-from:org.biodatageeks.sequila.pileup.model.**",
 updateOptions := updateOptions.value.withLatestSnapshots(false)
 outputStrategy := Some(StdoutOutput)
 

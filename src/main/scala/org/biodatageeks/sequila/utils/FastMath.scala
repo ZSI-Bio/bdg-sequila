@@ -53,13 +53,43 @@ object FastMath {
 
   def merge [A,B](map1: mutable.Map[A,B], map2:mutable.Map[A,B] ): Option[mutable.Map[A,B]] ={
     if (map1 == null || map1.isEmpty)
-      return Option(map2)
+      return Some(map2)
     if (map2 == null || map2.isEmpty)
-      return Option(map1)
+      return Some(map1)
     if(map1.keySet.intersect(map2.keySet).isEmpty)
-      return Option(map1 ++ map2)
+      return Some(map1 ++ map2)
     None
   }
 
 
+  def addArrays(arr1: Array[Short], arr2 :Array[Short]): Array[Short] = {
+    if (arr1.isEmpty)
+      return arr2
+    if (arr2.isEmpty)
+      return arr1
+    if (arr1.length >= arr2.length) {
+      for (ind <- arr2.indices)
+        arr1(ind) = (arr1(ind) + arr2(ind)).toShort
+      arr1
+    } else {
+      for (ind <- arr1.indices)
+        arr2(ind) = (arr1(ind) + arr2(ind)).toShort
+      arr2
+    }
+  }
+
+  def merge2DEqualArrays(arr1: Array[Array[Short]], arr2: Array[Array[Short]] ): Array[Array[Short]] = {
+    if(arr1 == null || arr1.isEmpty)
+      return arr2
+    if(arr2 == null || arr2.isEmpty)
+      return arr1
+    val result = new Array[Array[Short]](arr1.length)
+    var id = 0
+    val length = arr1.length
+    while(id < length){
+      result(id) = addArrays(arr1(id), arr2(id))
+      id += 1
+    }
+    result
+  }
 }

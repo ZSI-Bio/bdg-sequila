@@ -7,27 +7,27 @@ import org.biodatageeks.sequila.pileup.timers.PileupTimers._
 import scala.collection.mutable
 
 object Quals {
-  type SingleLocusQuals = mutable.HashMap[Byte, Array[Short]]
-  val SingleLocusQuals = mutable.HashMap[Byte, Array[Short]] _
+  type SingleLocusQuals = Array[Array[Short]]
+  val SingleLocusQuals = Array[Array[Short]] _
 
   type MultiLociQuals = mutable.IntMap[Quals.SingleLocusQuals]
   val MultiLociQuals = mutable.IntMap[Quals.SingleLocusQuals] _
 
-  implicit class SingleLocusQualsExtension(val map: Quals.SingleLocusQuals) {
-    def derivedCoverage: Short = map.map({ case (k, v) => v.sum }).sum
+  implicit class SingleLocusQualsExtension(val arr: Quals.SingleLocusQuals) {
+    def derivedCoverage: Short = arr.map(r => r.sum).sum
 
-    def totalEntries: Long = map.map({ case (k, v) => 1 }).sum
+    def totalEntries: Long = arr.filter(_ != null).length
 
-    def merge(mapOther: SingleLocusQuals): SingleLocusQuals = {
+    def merge(arrOther: SingleLocusQuals): SingleLocusQuals = {
 
-      val fastMerge = FastMath.merge(map, mapOther)
-      if (fastMerge.isDefined)
-        return FastMath.merge(map, mapOther).get.asInstanceOf[SingleLocusQuals]
+      val fastMerge = FastMath.merge2DEqualArrays(arr, arrOther)
+      if (! fastMerge.isEmpty)
+        return fastMerge.asInstanceOf[SingleLocusQuals]
 
-      val keyset = map.keySet ++ mapOther.keySet
+      val keyset = arr.keySet ++ arrOther.keySet
       val mergedMap = new SingleLocusQuals()
       for (k <- keyset)
-        mergedMap(k) = addArrays(map.get(k), mapOther.get(k))
+        mergedMap(k) = addArrays(arr.get(k), arrOther.get(k))
       mergedMap
     }
 
@@ -53,7 +53,7 @@ object Quals {
     }
 
     def trim: SingleLocusQuals = {
-      map.map({ case (k, v) => k -> v.take(v(Conf.qualityArrayLength - 1) + 1) })
+      arr.arr({ case (k, v) => k -> v.take(v(Conf.qualityArrayLength - 1) + 1) })
     }
 
     def addQualityForAlt(alt: Char, quality: Byte, updateMax:Boolean): Unit = {
@@ -61,30 +61,30 @@ object Quals {
       val qualityIndex = if (Conf.isBinningEnabled) (quality/Conf.binSize).toShort else quality
       val arrSize = Conf.qualityArrayLength
 
-      if (!map.contains(altByte)) {
+      if (!arr.contains(altByte)) {
         val array = new Array[Short](arrSize)
         array(qualityIndex) = 1.toShort // no need for incrementing. first and last time here.
         array(arrSize-1) = qualityIndex
-        map.update(altByte, array)
+        arr.update(altByte, array)
         return
       }
 
       if(updateMax) {
-        map(altByte)(qualityIndex) = (map(altByte)(qualityIndex) + 1).toShort
-        if (qualityIndex > map(altByte).last)
-          map(altByte)(arrSize-1) = qualityIndex
+        arr(altByte)(qualityIndex) = (arr(altByte)(qualityIndex) + 1).toShort
+        if (qualityIndex > arr(altByte).last)
+          arr(altByte)(arrSize-1) = qualityIndex
         return
       }
 
-      if (qualityIndex >= map(altByte).length){
+      if (qualityIndex >= arr(altByte).length){
         val array = new Array[Short](arrSize)
-        System.arraycopy(map(altByte),0,array, 0, map(altByte).length)
+        System.arraycopy(arr(altByte),0,array, 0, arr(altByte).length)
         array(qualityIndex) = 1.toShort
-        map.update(altByte, array)
+        arr.update(altByte, array)
         return
       }
 
-      map(altByte)(qualityIndex) = (map(altByte)(qualityIndex) + 1).toShort
+      arr(altByte)(qualityIndex) = (arr(altByte)(qualityIndex) + 1).toShort
 
     }
   }
@@ -125,7 +125,7 @@ object Quals {
       def getQualitiesCount: mutable.IntMap[Int] = {
         val res = new mutable.IntMap[Int]()
         map.map { case (k, v) =>
-          v.map { case (kk, vv) =>
+          v.arr { case (kk, vv) =>
             for (index <- vv.indices by 2) {
               val item = vv(index)
               if (res.contains(item)) res.update(item, res(item) + 1)

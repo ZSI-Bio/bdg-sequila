@@ -9,7 +9,7 @@ import scala.util.Random
 object BenchmarkRunner {
 
   final val posStart = 1
-  final val postStop = 10000000
+  final val postStop = 1000000
   final val shift = 65
   def main(args: Array[String]): Unit = {
     run()
@@ -39,7 +39,8 @@ object BenchmarkRunner {
       val index = i
       map(index)('A')(1) = (map(index)('A')(1) + 1).toShort
     }
-    println(s"HashMap - Time taken: ${(System.nanoTime - t1) / 1e9d} s")
+    val t2 = System.nanoTime
+    println(s"HashMap - Time taken: ${(t2- t1) / 1e9d} s")
   }
 
 
@@ -50,7 +51,8 @@ object BenchmarkRunner {
       val index2 = 'A'.toInt - shift
       map(index)(index2)(1) = (map(index)(index2)(1) + 1).toShort
     }
-    println(s"2D Array - Time taken: ${(System.nanoTime - t1) / 1e9d} s")
+    val t2 = System.nanoTime
+    println(s"2D Array - Time taken: ${(t2 - t1) / 1e9d} s")
   }
 
 
@@ -61,7 +63,9 @@ object BenchmarkRunner {
       val index2 = 'A'.toInt - shift
       map(index)(index2)(1) = (map(index)(index2)(1) + 1).toShort
     }
-    println(s"3D Array - Time taken: ${(System.nanoTime - t1) / 1e9d} s")
+    val t2 = System.nanoTime
+
+    println(s"3D Array - Time taken: ${(t2 - t1) / 1e9d} s")
   }
 
   private def prepareTestHashMap(positions:Range, map: mutable.IntMap[mutable.HashMap[Byte, Array[Short]]]): Unit = {
@@ -77,8 +81,8 @@ object BenchmarkRunner {
 
   private def prepareTest2DArray(positions:Range, map: mutable.IntMap[Array[Array[Short]]]) = {
 
-    val arr = new Array[Array[Short]](30)
     for(p <- positions) {
+      val arr = new Array[Array[Short]](30)
       val alts = generateRandomAlts
       for(a <- alts) {
         arr(a.toInt - shift) = generateRandomQuals
@@ -89,8 +93,8 @@ object BenchmarkRunner {
   }
 
   private def prepareTest3DArray(positions:Range, arr: Array[Array[Array[Short]]]) = {
-    val arrInner = new Array[Array[Short]](30)
     for(p <- positions) {
+      val arrInner = new Array[Array[Short]](30)
       val alts = generateRandomAlts
       for(a <- alts) {
         arrInner(a.toInt - shift) = generateRandomQuals

@@ -26,7 +26,7 @@ object PileupMethods {
     * @param spark spark session
     * @return distributed collection of PileupRecords
     */
-  def calculatePileup(alignments: RDD[SAMRecord], spark: SparkSession, refPath: String): RDD[InternalRow] = {
+  def calculatePileup(alignments: RDD[SAMRecord], spark: SparkSession, refPath: String): RDD[PileupRecord] = {
 
 
     val enableInstrumentation = spark.sqlContext.getConf(InternalParams.EnableInstrumentation).toBoolean

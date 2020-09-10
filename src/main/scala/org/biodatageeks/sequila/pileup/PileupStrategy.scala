@@ -1,16 +1,18 @@
 package org.biodatageeks.sequila.pileup
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.{PileupTemplate, SparkSession, Strategy}
+import org.apache.spark.unsafe.types.UTF8String
 import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
 import org.biodatageeks.sequila.datasources.InputDataType
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
-import org.biodatageeks.sequila.pileup.conf.QualityConstants.{DEFAULT_MAX_QUAL,DEFAULT_BIN_SIZE}
+import org.biodatageeks.sequila.pileup.conf.QualityConstants.{DEFAULT_BIN_SIZE, DEFAULT_MAX_QUAL}
 import org.biodatageeks.sequila.pileup.conf.Conf
+import org.biodatageeks.sequila.pileup.model.PileupRecord
 import org.biodatageeks.sequila.utils.{InternalParams, TableFuncs}
 import org.seqdoop.hadoop_bam.{BAMBDGInputFormat, CRAMBDGInputFormat}
 
@@ -48,7 +50,24 @@ case class PileupPlan [T<:BDGAlignInputFormat](plan:LogicalPlan, spark:SparkSess
 
   override protected def doExecute(): RDD[InternalRow] = {
     setupPileupConfiguration()
-    new Pileup(spark).handlePileup(tableName, sampleId, refPath, output)
+    val out = new Pileup(spark).handlePileup(tableName, sampleId, refPath, output)
+    projectOutput(out)
+  }
+
+  private def projectOutput(rdd:RDD[PileupRecord]):RDD[InternalRow] = {
+    val schema = plan.schema
+    rdd.mapPartitions(p  => {
+      val projection = UnsafeProjection.create(schema)
+      p.map { r =>
+        projection.apply(InternalRow.fromSeq(Seq(
+          UTF8String.fromString(r.contig),
+          r.start, r.end,
+          UTF8String.fromString(r.ref),
+          r.cov, r.countRef, r.countNonRef,
+          CatalystTypeConverters.convertToCatalyst(r.alts),
+          CatalystTypeConverters.convertToCatalyst(r.quals))))
+      }
+    })
   }
 
   private def setupPileupConfiguration():Unit = {

@@ -9,6 +9,7 @@ import org.biodatageeks.sequila.datasources.BAM.BDGAlignFileReaderWriter
 import org.biodatageeks.sequila.datasources.InputDataType
 import org.biodatageeks.sequila.inputformats.BDGAlignInputFormat
 import org.biodatageeks.sequila.pileup.conf.Conf
+import org.biodatageeks.sequila.pileup.model.PileupRecord
 import org.biodatageeks.sequila.utils.{InternalParams, TableFuncs}
 import org.seqdoop.hadoop_bam.CRAMBDGInputFormat
 import org.slf4j.LoggerFactory
@@ -19,7 +20,7 @@ import scala.reflect.ClassTag
 class Pileup[T<:BDGAlignInputFormat](spark:SparkSession)(implicit c: ClassTag[T]) extends BDGAlignFileReaderWriter[T] {
   val logger = LoggerFactory.getLogger(this.getClass.getCanonicalName)
 
-  def handlePileup(tableName: String, sampleId: String, refPath:String, output: Seq[Attribute]): RDD[InternalRow] = {
+  def handlePileup(tableName: String, sampleId: String, refPath:String, output: Seq[Attribute]): RDD[PileupRecord] = {
     logger.info(s"Calculating pileup on table: $tableName")
     logger.info(s"Current configuration\n$Conf")
 

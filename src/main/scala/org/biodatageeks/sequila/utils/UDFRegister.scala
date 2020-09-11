@@ -28,6 +28,8 @@ object UDFRegister {
 
     spark.sqlContext.udf.register("quals_to_map", QualityFunctions.qualsToMap _)
     spark.sqlContext.udf.register("quals_to_cov", QualityFunctions.qualsToCoverage _)
+    spark.sqlContext.udf.register("to_charmap", QualityFunctions.qualsToCharMap _)
+
     spark.sqlContext.udf.register("cov_equals", CoverageFunctions.isCovEqual _)
 
 

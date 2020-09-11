@@ -14,7 +14,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     s"""
        |SELECT ${Columns.CONTIG}, ${Columns.START}, ${Columns.END},
        | ${Columns.REF}, ${Columns.COVERAGE},
-       | ${Columns.ALTS}, ${Columns.QUALS},
+       | to_char(${Columns.ALTS}) as alts, ${Columns.QUALS},
        | quals_to_cov(${Columns.QUALS}, ${Columns.COVERAGE}) as $qualCoverageCol,
        | quals_to_map(${Columns.QUALS}) as $qualAgg,
        | cov_equals (${Columns.COVERAGE}, ${Columns.COVERAGE} ) as $covEquality
@@ -28,6 +28,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
+    result.show()
     val equals = result.select(covEquality).distinct()
     result.where(s"$covEquality == false").show(10, false)
 

@@ -2,7 +2,7 @@ package org.biodatageeks.sequila.utils
 
 import org.apache.spark.sql.SparkSession
 import org.biodatageeks.sequila.rangejoins.methods.transformations.RangeMethods
-import org.biodatageeks.sequila.pileup.udfs.{QualityFunctions, CoverageFunctions}
+import org.biodatageeks.sequila.pileup.udfs.{AltFunctions, CoverageFunctions, QualityFunctions}
 
 object UDFRegister {
 
@@ -31,6 +31,7 @@ object UDFRegister {
     spark.sqlContext.udf.register("cov_equals", CoverageFunctions.isCovEqual _)
 
 
+    spark.sqlContext.udf.register("to_char", AltFunctions.byteToString _)
 
 
 

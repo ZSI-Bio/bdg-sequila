@@ -28,6 +28,7 @@ class BaseQualityTestSuite extends PileupTestBase {
     ss.sparkContext.setLogLevel("ERROR")
 
     val result = ss.sql(pileupQuery)
+    result.show()
     val equals = result.select(covEquality).distinct()
     result.where(s"$covEquality == false").show(10, false)
 

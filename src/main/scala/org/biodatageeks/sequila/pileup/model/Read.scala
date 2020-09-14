@@ -98,7 +98,7 @@ case class ExtendedReads(read: SAMRecord) {
 
   def calculateAlts(aggregate: ContigAggregate, qualityCache: QualityCache, start: Int,
                     cigar: Cigar, bQual: Array[Byte], 
-                    :Boolean): scala.collection.Set[Int] = {
+                    isPositiveStrand:Boolean): scala.collection.Set[Int] = {
     var position = start
     val ops = MDTagParser.parseMDTag(read.getAttribute("MD").toString)
 
